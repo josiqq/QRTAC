@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Escáner QR - QRTAC</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+    <style>
+        .scanner-container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        .scanner-result {
+            min-height: 200px;
+        }
+        .result-card {
+            border-left: 4px solid #28a745;
+        }
+        .error-card {
+            border-left: 4px solid #dc3545;
+        }
+        .warning-card {
+            border-left: 4px solid #ffc107;
+        }
+        #reader {
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 0 auto;
+        }
+        .scan-line {
+            animation: scan 2s linear infinite;
+        }
+        @keyframes scan {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(400px); }
+        }
+        .camera-permission {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" th:href="@{/}">
+                <i class="fas fa-qrcode me-2"></i>QRTAC
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" th:href="@{/organizer/dashboard}">
+                    <i class="fas fa-tachometer-alt me-1"></i>Dashboard
+                </a>
+                <span class="navbar-text me-3">
+                    <i class="fas fa-user-tie me-1"></i>
+                    <span sec:authentication="principal.fullName"></span>
+                </span>
+                <a class="nav-link" th:href="@{/logout}">
+                    <i class="fas fa-sign-out-alt"></i> Salir
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-4">
+        <div class="row">
+            <div class="col-12">
+                <h1 class="text-center mb-4">
+                    <i class="fas fa-qrcode text-primary me-3"></i>
+                    Escáner de Tickets QR
+                </h1>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Escáner -->
+            <div class="col-lg-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-camera me-2"></i>Cámara
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="scanner-container">
+                            <!-- Mensaje de permisos de cámara -->
+                            <div id="camera-permission" class="camera-permission p-4 text-center mb-3">
+                                <i class="fas fa-camera fa-3x mb-3"></i>
+                                <h5>Activar Cámara</h5>
+                                <p class="mb-3">Para escanear códigos QR necesitamos acceso a tu cámara</p>
+                                <button id="start-scanner" class="btn btn-light btn-lg">
+                                    <i class="fas fa-play me-2"></i>Iniciar Escáner
+                                </button>
+                            </div>
+
+                            <!-- Escáner QR -->
+                            <div id="reader" style="display: none;"></div>
+                            
+                            <!-- Controles del escáner -->
+                            <div id="scanner-controls" class="text-center mt-3" style="display: none;">
+                                <button id="stop-scanner" class="btn btn-danger">
+                                    <i class="fas fa-stop me-2"></i>Detener Escáner
+                                </button>
+                                <button id="switch-camera" class="btn btn-secondary ms-2" style="display: none;">
+                                    <i class="fas fa-sync-alt me-2"></i>Cambiar Cámara
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Entrada manual de código -->
+                        <hr class="my-4">
+                        <div class="text-center">
+                            <h6>O ingresa el código manualmente:</h6>
+                            <div class="input-group">
+                                <input type="text" id="manual-code" class="form-control" 
+                                       placeholder="Pega aquí el código del ticket">
+                                <button id="validate-manual" class="btn btn-outline-primary">
+                                    <i class="fas fa-check me-1"></i>Validar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resultados -->
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-clipboard-check me-2"></i>Resultado de Validación
+                        </h5>
+                    </div>
+                    <div class="card-body scanner-result d-flex align-items-center justify-content-center">
+                        <div id="waiting-scan" class="text-center text-muted">
+                            <i class="fas fa-qrcode fa-4x mb-3 opacity-50"></i>
+                            <h5>Esperando escaneo...</h5>
+                            <p>Escanea un código QR o ingresa el código manualmente</p>
+                        </div>
+
+                        <div id="scan-result" style="display: none;">
+                            <!-- El resultado se llenará dinámicamente -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Historial de validaciones -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-history me-2"></i>Últimas Validaciones
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="validation-history">
+                            <p class="text-muted text-center">No hay validaciones recientes</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function showLoading() {
+            const resultDiv = document.getElementById('scan-result');
+            const waitingDiv = document.getElementById('waiting-scan');
+            
+            waitingDiv.style.display = 'none';
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Validando...</span>
+                    </div>
+                    <p class="mt-3">Validando ticket...</p>
+                </div>
+            `;
+        }
+
+        function showSuccessResult(data) {
+            const resultDiv = document.getElementById('scan-result');
+            resultDiv.innerHTML = `
+                <div class="card result-card">
+                    <div class="card-body">
+                        <div class="text-center mb-3">
+                            <i class="fas fa-check-circle text-success fa-3x"></i>
+                            <h4 class="text-success mt-2">¡Ticket Válido!</h4>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-6 mb-2">
+                                <strong>Cliente:</strong><br>
+                                <span class="text-muted">${data.clientName}</span>
+                            </div>
+                            <div class="col-sm-6 mb-2">
+                                <strong>Evento:</strong><br>
+                                <span class="text-muted">${data.eventName}</span>
+                            </div>
+                            <div class="col-sm-6 mb-2">
+                                <strong>Código:</strong><br>
+                                <code class="small">${data.ticketCode}</code>
+                            </div>
+                            <div class="col-sm-6 mb-2">
+                                <strong>Validado:</strong><br>
+                                <span class="text-muted">${new Date(data.usedAt).toLocaleString()}</span>
+                            </div>
+                        </div>
+                        <div class="text-center mt-3">
+                            <button onclick="resetScanner()" class="btn btn-primary">
+                                <i class="fas fa-qrcode me-2"></i>Escanear Otro
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function showErrorResult(data) {
+            const resultDiv = document.getElementById('scan-result');
+            let cardClass = 'error-card';
+            let iconClass = 'fas fa-times-circle text-danger';
+            let titleClass = 'text-danger';
+            let title = '¡Ticket Inválido!';
+
+            // Personalizar según el tipo de error
+            if (data.message.includes('ya ha sido utilizado') || data.message.includes('ya utilizado')) {
+                cardClass = 'warning-card';
+                iconClass = 'fas fa-exclamation-triangle text-warning';
+                titleClass = 'text-warning';
+                title = 'Ticket Ya Usado';
+            } else if (data.message.includes('expirado')) {
+                cardClass = 'warning-card';
+                iconClass = 'fas fa-clock text-warning';
+                titleClass = 'text-warning';
+                title = 'Ticket Expirado';
+            }
+
+            resultDiv.innerHTML = `
+                <div class="card ${cardClass}">
+                    <div class="card-body">
+                        <div class="text-center mb-3">
+                            <i class="${iconClass} fa-3x"></i>
+                            <h4 class="${titleClass} mt-2">${title}</h4>
+                        </div>
+                        <div class="alert alert-light text-center">
+                            <strong>Motivo:</strong><br>
+                            ${data.message}
+                        </div>
+                        <div class="text-center mt-3">
+                            <button onclick="resetScanner()" class="btn btn-primary">
+                                <i class="fas fa-qrcode me-2"></i>Escanear Otro
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function showError(message) {
+            const resultDiv = document.getElementById('scan-result');
+            const waitingDiv = document.getElementById('waiting-scan');
+            
+            waitingDiv.style.display = 'none';
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `
+                <div class="card error-card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-exclamation-triangle text-danger fa-3x mb-3"></i>
+                        <h5 class="text-danger">Error</h5>
+                        <p>${message}</p>
+                        <button onclick="resetScanner()" class="btn btn-primary">
+                            <i class="fas fa-redo me-2"></i>Intentar de Nuevo
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function resetScanner() {
+            const resultDiv = document.getElementById('scan-result');
+            const waitingDiv = document.getElementById('waiting-scan');
+            
+            resultDiv.style.display = 'none';
+            waitingDiv.style.display = 'block';
+            
+            // Limpiar campo manual
+            document.getElementById('manual-code').value = '';
+        }
+
+        function addToHistory(data, type) {
+            const timestamp = new Date().toLocaleString();
+            const historyItem = {
+                timestamp: timestamp,
+                type: type,
+                data: data
+            };
+            
+            validationHistory.unshift(historyItem);
+            
+            // Mantener solo los últimos 10
+            if (validationHistory.length > 10) {
+                validationHistory = validationHistory.slice(0, 10);
+            }
+            
+            updateHistoryDisplay();
+        }
+
+        function updateHistoryDisplay() {
+            const historyDiv = document.getElementById('validation-history');
+            
+            if (validationHistory.length === 0) {
+                historyDiv.innerHTML = '<p class="text-muted text-center">No hay validaciones recientes</p>';
+                return;
+            }
+            
+            let historyHtml = '';
+            validationHistory.forEach(item => {
+                const iconClass = item.type === 'success' ? 'fas fa-check-circle text-success' : 'fas fa-times-circle text-danger';
+                const clientName = item.data.clientName || 'N/A';
+                
+                historyHtml += `
+                    <div class="d-flex align-items-center mb-2 pb-2 border-bottom">
+                        <i class="${iconClass} me-2"></i>
+                        <div class="flex-grow-1">
+                            <small class="fw-bold">${clientName}</small><br>
+                            <small class="text-muted">${item.timestamp}</small>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            historyDiv.innerHTML = historyHtml;
+        }
+
+        // Sonidos de notificación (usando Web Audio API)
+        function playSuccessSound() {
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+                oscillator.frequency.setValueAtTime(1200, audioContext.currentTime + 0.1);
+                
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.3);
+            } catch (e) {
+                console.log('Audio no disponible');
+            }
+        }
+
+        function playErrorSound() {
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(400, audioContext.currentTime);
+                oscillator.frequency.setValueAtTime(200, audioContext.currentTime + 0.2);
+                
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.4);
+            } catch (e) {
+                console.log('Audio no disponible');
+            }
+        }
+
+        // Sobrescribir funciones para incluir sonidos
+        const originalShowSuccessResult = showSuccessResult;
+        showSuccessResult = function(data) {
+            originalShowSuccessResult(data);
+            playSuccessSound();
+        };
+
+        const originalShowErrorResult = showErrorResult;
+        showErrorResult = function(data) {
+            originalShowErrorResult(data);
+            playErrorSound();
+        };
+
+        // Limpiar recursos al salir
+        window.addEventListener('beforeunload', function() {
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.stop();
+            }
+        });
+    </script>
+</body>
+</html>

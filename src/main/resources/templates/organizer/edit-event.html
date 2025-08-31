@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Evento - QRTAC</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" th:href="@{/}">
+                <i class="fas fa-qrcode me-2"></i>QRTAC
+            </a>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text me-3">
+                    <i class="fas fa-user-tie me-1"></i>
+                    <span sec:authentication="principal.fullName"></span> (Organizador)
+                </span>
+                <a class="nav-link" th:href="@{/logout}">
+                    <i class="fas fa-sign-out-alt"></i> Salir
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-7">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-warning text-dark">
+                        <h4 class="mb-0">
+                            <i class="fas fa-edit me-2"></i>Editar Evento
+                        </h4>
+                    </div>
+                    <div class="card-body p-4">
+
+                        <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <span th:text="${error}"></span>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+
+                        <form th:action="@{/organizer/events/{id}/edit(id=${event.id})}" th:object="${event}" method="post">
+                            <div class="mb-3">
+                                <label for="name" class="form-label">Nombre del Evento</label>
+                                <input type="text" class="form-control" id="name" th:field="*{name}" 
+                                       th:classappend="${#fields.hasErrors('name')} ? 'is-invalid' : ''" required>
+                                <div th:if="${#fields.hasErrors('name')}" class="invalid-feedback" th:errors="*{name}"></div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="description" class="form-label">Descripción</label>
+                                <textarea class="form-control" id="description" rows="3" th:field="*{description}"
+                                          th:classappend="${#fields.hasErrors('description')} ? 'is-invalid' : ''" required></textarea>
+                                <div th:if="${#fields.hasErrors('description')}" class="invalid-feedback" th:errors="*{description}"></div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="eventDate" class="form-label">Fecha y Hora</label>
+                                    <input type="datetime-local" class="form-control" id="eventDate" th:field="*{eventDate}"
+                                           th:classappend="${#fields.hasErrors('eventDate')} ? 'is-invalid' : ''" required>
+                                    <div th:if="${#fields.hasErrors('eventDate')}" class="invalid-feedback" th:errors="*{eventDate}"></div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="venue" class="form-label">Lugar del Evento</label>
+                                    <input type="text" class="form-control" id="venue" th:field="*{venue}"
+                                           th:classappend="${#fields.hasErrors('venue')} ? 'is-invalid' : ''" required>
+                                    <div th:if="${#fields.hasErrors('venue')}" class="invalid-feedback" th:errors="*{venue}"></div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="capacity" class="form-label">Capacidad</label>
+                                    <input type="number" class="form-control" id="capacity" th:field="*{capacity}" min="1"
+                                           th:classappend="${#fields.hasErrors('capacity')} ? 'is-invalid' : ''" required>
+                                    <div th:if="${#fields.hasErrors('capacity')}" class="invalid-feedback" th:errors="*{capacity}"></div>
+                                    <small class="form-text text-muted">No se puede reducir la capacidad por debajo de los tickets ya vendidos.</small>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="price" class="form-label">Precio (USD)</label>
+                                    <input type="number" class="form-control" id="price" th:field="*{price}" min="0.00" step="0.01"
+                                           th:classappend="${#fields.hasErrors('price')} ? 'is-invalid' : ''" required>
+                                    <div th:if="${#fields.hasErrors('price')}" class="invalid-feedback" th:errors="*{price}"></div>
+                                </div>
+                            </div>
+
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                                <a th:href="@{/organizer/dashboard}" class="btn btn-secondary me-md-2">
+                                    <i class="fas fa-times me-1"></i>Cancelar
+                                </a>
+                                <button type="submit" class="btn btn-warning">
+                                    <i class="fas fa-save me-1"></i>Guardar Cambios
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

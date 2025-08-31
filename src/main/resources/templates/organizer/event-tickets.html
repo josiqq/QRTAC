@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tickets del Evento - QRTAC</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" th:href="@{/}">
+                <i class="fas fa-qrcode me-2"></i>QRTAC
+            </a>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text me-3">
+                    <i class="fas fa-user-tie me-1"></i>
+                    <span sec:authentication="principal.fullName"></span> (Organizador)
+                </span>
+                <a class="nav-link" th:href="@{/logout}">
+                    <i class="fas fa-sign-out-alt"></i> Salir
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-4">
+        <div class="row mb-4 align-items-center">
+            <div class="col-md-8">
+                <h1 class="display-6" th:text="${event.name}">Nombre del Evento</h1>
+                <p class="text-muted">
+                    <i class="fas fa-calendar-alt me-1"></i> <span th:text="${#temporals.format(event.eventDate, 'dd/MM/yyyy HH:mm')}"></span>
+                    <span class="mx-2">|</span>
+                    <i class="fas fa-map-marker-alt me-1"></i> <span th:text="${event.venue}"></span>
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <a th:href="@{/organizer/dashboard}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Volver al Dashboard
+                </a>
+            </div>
+        </div>
+        
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card text-center h-100">
+                    <div class="card-body">
+                        <i class="fas fa-ticket-alt fa-2x text-primary mb-2"></i>
+                        <h4 th:text="${event.capacity - event.availableTickets}">0</h4>
+                        <p class="mb-0 text-muted">Tickets Vendidos</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center h-100">
+                    <div class="card-body">
+                        <i class="fas fa-users fa-2x text-info mb-2"></i>
+                        <h4 th:text="${event.capacity}">100</h4>
+                        <p class="mb-0 text-muted">Capacidad Total</p>
+                    </div>
+                </div>
+            </div>
+             <div class="col-md-4">
+                <div class="card text-center h-100">
+                    <div class="card-body">
+                        <i class="fas fa-dollar-sign fa-2x text-success mb-2"></i>
+                        <h4 th:text="${#numbers.formatDecimal(event.price * (event.capacity - event.availableTickets), 1, 'POINT', 2, 'COMMA')}">0.00</h4>
+                        <p class="mb-0 text-muted">Ingresos Actuales</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-list-ul me-2"></i>Lista de Asistentes
+                </h5>
+            </div>
+            <div class="card-body">
+                <div th:if="${#lists.isEmpty(event.tickets)}" class="text-center py-5">
+                    <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Aún no se ha vendido ningún ticket</h5>
+                    <p class="text-muted">Los tickets vendidos para este evento aparecerán aquí.</p>
+                </div>
+
+                <div th:unless="${#lists.isEmpty(event.tickets)}" class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col">#</th>
+                                <th scope="col">Comprador</th>
+                                <th scope="col">Email</th>
+                                <th scope="col">Fecha de Compra</th>
+                                <th scope="col">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="ticket, iterStat : ${event.tickets}">
+                                <th scope="row" th:text="${iterStat.count}">1</th>
+                                <td th:text="${ticket.user.fullName}">Nombre Completo</td>
+                                <td th:text="${ticket.user.email}">correo@ejemplo.com</td>
+                                <td th:text="${#temporals.format(ticket.purchaseDate, 'dd/MM/yyyy HH:mm')}">Fecha</td>
+                                <td>
+                                    <span th:switch="${ticket.status.name()}" class="badge">
+                                        <span th:case="'VALID'" class="badge bg-success">Válido</span>
+                                        <span th:case="'USED'" class="badge bg-secondary">Utilizado</span>
+                                        <span th:case="'CANCELLED'" class="badge bg-danger">Cancelado</span>
+                                        <span th:case="*" class="badge bg-info" th:text="${ticket.status}"></span>
+                                    </span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
