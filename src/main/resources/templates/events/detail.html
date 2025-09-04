@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${event.name} + ' - QRTAC'">Detalle del Evento - QRTAC</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .event-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 80px 0;
+        }
+
+        .event-detail-card {
+            border: none;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        .event-price {
+            color: #28a745;
+            font-weight: bold;
+            font-size: 2rem;
+        }
+
+        .detail-icon {
+            color: #667eea;
+            width: 25px;
+        }
+
+        .status-badge {
+            font-size: 1rem;
+            padding: 8px 16px;
+        }
+
+        .purchase-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: none;
+            border-radius: 15px;
+        }
+
+        .progress-bar-custom {
+            height: 12px;
+            border-radius: 6px;
+        }
+
+        .organizer-info {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .btn-purchase {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 25px;
+            transition: all 0.3s;
+        }
+
+        .btn-purchase:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 15px rgba(40, 167, 69, 0.3);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" th:href="@{/}">
+                <i class="fas fa-qrcode me-2"></i>QRTAC
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/}">Inicio</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/events}">Eventos</a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/login}">Iniciar Sesión</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/register}">Registrarse</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Event Header -->
+    <section class="event-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <nav aria-label="breadcrumb" class="mb-3">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item">
+                                <a th:href="@{/}" class="text-white-50">Inicio</a>
+                            </li>
+                            <li class="breadcrumb-item">
+                                <a th:href="@{/events}" class="text-white-50">Eventos</a>
+                            </li>
+                            <li class="breadcrumb-item active text-white" th:text="${event.name}">Evento</li>
+                        </ol>
+                    </nav>
+                    <h1 class="display-4 fw-bold mb-3" th:text="${event.name}">
+                        Nombre del Evento
+                    </h1>
+                    <p class="lead mb-4" th:text="${event.description}">
+                        Descripción completa del evento...
+                    </p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="status-badge">
+                        <span class="badge bg-success status-badge" th:if="${event.hasAvailableTickets()}">
+                            <i class="fas fa-ticket-alt me-2"></i>
+                            Tickets Disponibles
+                        </span>
+                        <span class="badge bg-danger status-badge" th:if="${!event.hasAvailableTickets()}">
+                            <i class="fas fa-times me-2"></i>
+                            Tickets Agotados
+                        </span>
+                        <span class="badge bg-secondary status-badge" th:if="${event.status.name() == 'CANCELLED'}">
+                            <i class="fas fa-ban me-2"></i>
+                            Evento Cancelado
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Event Details -->
+    <section class="py-5">
+        <div class="container">
+            <div class="row">
+                <!-- Left Column - Event Information -->
+                <div class="col-lg-8">
+                    <div class="card event-detail-card mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <h4 class="mb-0">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Información del Evento
+                            </h4>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="row">
+                                <div class="col-md-6 mb-4">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <i class="fas fa-calendar-alt detail-icon me-3"></i>
+                                        <div>
+                                            <h6 class="mb-1">Fecha y Hora</h6>
+                                            <p class="mb-0 text-muted"
+                                                th:text="${#temporals.format(event.eventDate, 'dd/MM/yyyy HH:mm')}">
+                                                15/03/2024 20:00
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex align-items-center mb-3">
+                                        <i class="fas fa-map-marker-alt detail-icon me-3"></i>
+                                        <div>
+                                            <h6 class="mb-1">Ubicación</h6>
+                                            <p class="mb-0 text-muted" th:text="${event.venue}">
+                                                Lugar del evento
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-users detail-icon me-3"></i>
+                                        <div>
+                                            <h6 class="mb-1">Capacidad</h6>
+                                            <p class="mb-0 text-muted">
+                                                <span th:text="${event.capacity}">100</span> personas
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <i class="fas fa-dollar-sign detail-icon me-3"></i>
+                                        <div>
+                                            <h6 class="mb-1">Precio por Ticket</h6>
+                                            <p class="event-price mb-0"
+                                                th:text="'Gs. ' + ${#numbers.formatDecimal(event.price, 0, 'POINT', 0, 'COMMA')}">
+                                            </p>
+
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex align-items-center mb-3">
+                                        <i class="fas fa-ticket-alt detail-icon me-3"></i>
+                                        <div>
+                                            <h6 class="mb-1">Tickets Disponibles</h6>
+                                            <p class="mb-0">
+                                                <span class="text-success fw-bold"
+                                                    th:text="${event.availableTickets}">45</span>
+                                                de
+                                                <span th:text="${event.capacity}">100</span>
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Availability Progress Bar -->
+                                    <div>
+                                        <h6 class="mb-2">Disponibilidad</h6>
+                                        <div class="progress progress-bar-custom mb-2">
+                                            <div class="progress-bar bg-success" role="progressbar"
+                                                th:style="'width: ' + (${event.availableTickets} * 100.0 / ${event.capacity}) + '%;'"
+                                                th:attr="aria-valuenow=${event.availableTickets}, aria-valuemax=${event.capacity}">
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">
+                                            <span
+                                                th:text="${#numbers.formatDecimal((event.availableTickets * 100.0 / event.capacity), 0, 2)}">75</span>%
+                                            disponible
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Event Description -->
+                            <hr class="my-4">
+                            <div>
+                                <h5 class="mb-3">
+                                    <i class="fas fa-align-left me-2"></i>
+                                    Descripción Completa
+                                </h5>
+                                <div class="text-muted" style="white-space: pre-line;" th:text="${event.description}">
+                                    Descripción completa del evento con todos los detalles necesarios...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Organizer Information -->
+                    <div class="organizer-info">
+                        <h5 class="mb-3">
+                            <i class="fas fa-user-tie me-2"></i>
+                            Organizador
+                        </h5>
+                        <div class="d-flex align-items-center">
+                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3"
+                                style="width: 50px; height: 50px;">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-1" th:text="${event.organizer.fullName}">
+                                    Nombre del Organizador
+                                </h6>
+                                <small class="text-muted" th:text="${event.organizer.email}">
+                                    organizador@email.com
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column - Purchase Card -->
+                <div class="col-lg-4">
+                    <div class="card purchase-card sticky-top" style="top: 20px;">
+                        <div class="card-body p-4 text-center">
+                            <h4 class="card-title mb-3">
+                                <i class="fas fa-shopping-cart me-2"></i>
+                                Comprar Ticket
+                            </h4>
+
+                            <div class="mb-4">
+                                <div class="event-price mb-2"
+                                    th:text="'Gs. ' + ${#numbers.formatDecimal(event.price, 0, 'POINT', 0, 'COMMA')}">
+                                    Gs. 25.00
+                                </div>
+                                <small class="text-muted">Por ticket</small>
+                            </div>
+
+                            <!-- Quantity Selector -->
+                            <div class="mb-4"
+                                th:if="${event.hasAvailableTickets() and event.status.name() == 'ACTIVE'}">
+                                <label for="quantity" class="form-label">Cantidad de tickets</label>
+                                <div class="input-group">
+                                    <button class="btn btn-outline-secondary" type="button"
+                                        onclick="changeQuantity(-1)">
+                                        <i class="fas fa-minus"></i>
+                                    </button>
+                                    <input type="number" class="form-control text-center" id="quantity" value="1"
+                                        min="1" th:max="${event.availableTickets}">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="changeQuantity(1)">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Total Price -->
+                            <div class="mb-4"
+                                th:if="${event.hasAvailableTickets() and event.status.name() == 'ACTIVE'}">
+                                <h5 class="mb-1">Total:
+                                    <span id="totalPrice" class="text-success"
+                                        th:text="'Gs. ' + ${#numbers.formatDecimal(event.price, 0, 'POINT', 2, 'COMMA')}">
+                                        Gs. 25.000
+                                    </span>
+                                </h5>
+                            </div>
+
+                            <!-- Purchase Button -->
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-purchase text-white"
+                                    th:if="${event.hasAvailableTickets() and event.status.name() == 'ACTIVE'}"
+                                    onclick="contactSellerViaWhatsApp()">
+                                    <i class="fab fa-whatsapp me-2"></i>
+                                    Reservar por WhatsApp
+                                </button>
+
+                                <button class="btn btn-secondary" disabled th:if="${!event.hasAvailableTickets()}">
+                                    <i class="fas fa-times me-2"></i>
+                                    Tickets Agotados
+                                </button>
+
+                                <button class="btn btn-secondary" disabled
+                                    th:if="${event.status.name() == 'CANCELLED'}">
+                                    <i class="fas fa-ban me-2"></i>
+                                    Evento Cancelado
+                                </button>
+                            </div>
+
+                            <!-- Security Info -->
+                            <div class="mt-4">
+                                <small class="text-muted">
+                                    <i class="fas fa-shield-alt text-success me-1"></i>
+                                    Tu ticket incluirá un código QR único y seguro
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Share Event -->
+                    <div class="card mt-4 border-0 bg-light">
+                        <div class="card-body text-center">
+                            <h6 class="card-title">
+                                <i class="fas fa-share-alt me-2"></i>
+                                Compartir Evento
+                            </h6>
+                            <div class="d-flex justify-content-center gap-2">
+                                <button class="btn btn-outline-primary btn-sm" onclick="shareOnFacebook()">
+                                    <i class="fab fa-facebook-f"></i>
+                                </button>
+                                <button class="btn btn-outline-info btn-sm" onclick="shareOnTwitter()">
+                                    <i class="fab fa-twitter"></i>
+                                </button>
+                                <button class="btn btn-outline-success btn-sm" onclick="shareOnWhatsApp()">
+                                    <i class="fab fa-whatsapp"></i>
+                                </button>
+                                <button class="btn btn-outline-secondary btn-sm" onclick="copyLink()">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4 mt-5">
+        <div class="container text-center">
+            <p class="mb-0">&copy; 2025 QRTAC - Sistema de Tickets con QR. Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        const eventPrice = /*[[${event.price}]]*/ 25.00;
+        const maxTickets = /*[[${event.availableTickets}]]*/ 10;
+        const eventName = /*[[${event.name}]]*/ 'Evento';
+        const organizerPhone = /*[[${event.organizer.phone}]]*/ '595981123456';
+
+        function changeQuantity(change) {
+            const quantityInput = document.getElementById('quantity');
+            let newValue = parseInt(quantityInput.value) + change;
+
+            if (newValue < 1) newValue = 1;
+            if (newValue > maxTickets) newValue = maxTickets;
+
+            quantityInput.value = newValue;
+            updateTotalPrice();
+        }
+
+        function updateTotalPrice() {
+            const quantity = parseInt(document.getElementById('quantity').value);
+            const total = eventPrice * quantity;
+            document.getElementById('totalPrice').textContent = 'Gs. ' + total.toLocaleString('es-PY', { minimumFractionDigits: 2 });
+        }
+
+        function contactSellerViaWhatsApp() {
+            const quantity = document.getElementById('quantity').value;
+            const total = eventPrice * quantity;
+
+            const formattedTotal = total.toLocaleString('es-PY', { minimumFractionDigits: 0 });
+
+            const message = `¡Hola! 👋 Quisiera reservar ${quantity} ticket(s) para el evento "${eventName}".\n\nTotal a pagar: Gs. ${formattedTotal}.\n\n¡Aguardo tu respuesta para coordinar el pago!`;
+
+            const encodedMessage = encodeURIComponent(message);
+
+            const whatsappUrl = `https://wa.me/${organizerPhone}?text=${encodedMessage}`;
+
+            window.open(whatsappUrl, '_blank');
+        }
+
+
+        function shareOnFacebook() {
+            window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`, '_blank');
+        }
+
+        function shareOnTwitter() {
+            window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent('¡Mirá este evento: ' + eventName)}&url=${encodeURIComponent(window.location.href)}`, '_blank');
+        }
+
+        function shareOnWhatsApp() {
+            window.open(`https://wa.me/?text=${encodeURIComponent('¡Mirá este evento: ' + eventName + ' ' + window.location.href)}`, '_blank');
+        }
+
+        function copyLink() {
+            navigator.clipboard.writeText(window.location.href).then(function () {
+                // Crear un toast temporal para mostrar confirmación
+                const toast = document.createElement('div');
+                toast.className = 'toast-notification';
+                toast.style.cssText = `
+                    position: fixed; 
+                    top: 20px; 
+                    right: 20px; 
+                    background: #28a745; 
+                    color: white; 
+                    padding: 10px 20px; 
+                    border-radius: 5px; 
+                    z-index: 9999;
+                    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+                `;
+                toast.innerHTML = '<i class="fas fa-check me-2"></i>¡Enlace copiado!';
+                document.body.appendChild(toast);
+
+                setTimeout(() => {
+                    document.body.removeChild(toast);
+                }, 3000);
+            }).catch(function (err) {
+                alert('Error al copiar el enlace');
+            });
+        }
+
+        // Actualizar el precio total cuando cambie la cantidad
+        document.addEventListener('DOMContentLoaded', function () {
+            const quantityInput = document.getElementById('quantity');
+            if (quantityInput) {
+                quantityInput.addEventListener('input', updateTotalPrice);
+            }
+        });
+        /*]]>*/
+    </script>
+</body>
+
+</html>
