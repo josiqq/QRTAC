@@ -16,11 +16,6 @@ public class AuthController {
     @Autowired
     private UserService userService;
 
-    @GetMapping("/")
-    public String home() {
-        return "index";
-    }
-
     @GetMapping("/login")
     public String loginForm(@RequestParam(value = "error", required = false) String error, 
                            Model model) {
@@ -28,33 +23,6 @@ public class AuthController {
             model.addAttribute("error", "Usuario o contraseña incorrectos");
         }
         return "auth/login";
-    }
-
-    @GetMapping("/register")
-    public String registerForm(Model model) {
-        model.addAttribute("user", new User());
-        return "auth/register";
-    }
-
-    @PostMapping("/register")
-    public String registerUser(@Valid @ModelAttribute User user, 
-                              BindingResult result, 
-                              Model model, 
-                              RedirectAttributes redirectAttributes) {
-        
-        if (result.hasErrors()) {
-            return "auth/register";
-        }
-
-        try {
-            userService.registerUser(user);
-            redirectAttributes.addFlashAttribute("success", 
-                "Usuario registrado exitosamente. Puedes iniciar sesión.");
-            return "redirect:/login";
-        } catch (RuntimeException e) {
-            model.addAttribute("error", e.getMessage());
-            return "auth/register";
-        }
     }
 
     @GetMapping("/register/organizer")
@@ -85,37 +53,6 @@ public class AuthController {
         } catch (RuntimeException e) {
             model.addAttribute("error", e.getMessage());
             return "auth/register-organizer";
-        }
-    }
-
-    @GetMapping("/register/client")
-    public String registerClientForm(Model model) {
-        User user = new User();
-        user.setRole(User.Role.CLIENT);
-        model.addAttribute("user", user);
-        return "auth/register-client";
-    }
-
-    @PostMapping("/register/client")
-    public String registerClient(@Valid @ModelAttribute User user, 
-                                BindingResult result, 
-                                Model model, 
-                                RedirectAttributes redirectAttributes) {
-        
-        user.setRole(User.Role.CLIENT);
-        
-        if (result.hasErrors()) {
-            return "auth/register-client";
-        }
-
-        try {
-            userService.registerUser(user);
-            redirectAttributes.addFlashAttribute("success", 
-                "Cliente registrado exitosamente. Puedes iniciar sesión.");
-            return "redirect:/login";
-        } catch (RuntimeException e) {
-            model.addAttribute("error", e.getMessage());
-            return "auth/register-client";
         }
     }
 }

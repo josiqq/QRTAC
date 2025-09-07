@@ -1,246 +1,259 @@
 <!DOCTYPE html>
-<html lang="es" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Organizador - QRTAC</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        .stats-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        .event-card {
-            transition: transform 0.2s;
-            border-left: 4px solid #667eea;
-        }
-
-        .event-card:hover {
-            transform: translateY(-2px);
-        }
-
-        .status-badge {
-            font-size: 0.75rem;
-        }
-
-        .scanner-btn {
-            background: linear-gradient(45deg, #28a745, #20c997);
-            border: none;
-            color: white;
-        }
-
-        .scanner-btn:hover {
-            background: linear-gradient(45deg, #218838, #1bb885);
-            color: white;
-        }
-    </style>
 </head>
-
-<body class="bg-light">
+<body>
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" th:href="@{/}">
-                <i class="fas fa-qrcode me-2"></i>QRTAC
+        <div class="container-fluid">
+            <a class="navbar-brand" th:href="@{/organizer/dashboard}">
+                <i class="fas fa-qrcode me-2"></i>QRTAC - Panel Organizador
             </a>
             <div class="navbar-nav ms-auto">
                 <span class="navbar-text me-3">
-                    <i class="fas fa-user-tie me-1"></i>
-                    <span sec:authentication="principal.fullName"></span> (Organizador)
+                    <i class="fas fa-user me-1"></i><span th:text="${organizer.fullName}"></span>
                 </span>
                 <a class="nav-link" th:href="@{/logout}">
-                    <i class="fas fa-sign-out-alt"></i> Salir
+                    <i class="fas fa-sign-out-alt me-1"></i>Salir
                 </a>
             </div>
         </div>
     </nav>
 
-    <div class="container py-4">
-        <!-- Header con acciones principales -->
-        <div class="row mb-4">
-            <div class="col-md-8">
-                <h1 class="display-6">
-                    <i class="fas fa-tachometer-alt text-primary me-3"></i>
-                    Dashboard del Organizador
-                </h1>
-            </div>
-            <div class="col-md-4 text-md-end">
-                <a th:href="@{/organizer/events/create}" class="btn btn-primary me-2">
-                    <i class="fas fa-plus me-2"></i>Crear Evento
-                </a>
-                <a th:href="@{/organizer/scanner}" class="btn scanner-btn">
-                    <i class="fas fa-qrcode me-2"></i>Escáner QR
-                </a>
-            </div>
-        </div>
-
-        <!-- Mensajes de feedback -->
+    <div class="container-fluid mt-4">
+        <!-- Mensajes -->
         <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
             <i class="fas fa-check-circle me-2"></i>
             <span th:text="${success}"></span>
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
 
-        <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
-            <i class="fas fa-exclamation-triangle me-2"></i>
-            <span th:text="${error}"></span>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-
-        <!-- Estadísticas rápidas -->
+        <!-- Estadísticas -->
         <div class="row mb-4">
-            <div class="col-md-3 mb-3">
-                <div class="card stats-card">
-                    <div class="card-body text-center">
-                        <i class="fas fa-calendar-alt fa-2x mb-2"></i>
-                        <h4 th:text="${#lists.size(events)}">0</h4>
-                        <p class="mb-0">Eventos Totales</p>
+            <div class="col-md-3">
+                <div class="card text-white bg-primary">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6>Eventos Activos</h6>
+                                <h3 th:text="${activeEventsCount}">0</h3>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="fas fa-calendar-check fa-2x opacity-75"></i>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-3 mb-3">
-                <div class="card stats-card">
-                    <div class="card-body text-center">
-                        <i class="fas fa-calendar-check fa-2x mb-2"></i>
-                        <h4 th:text="${activeEventsCount}">0</h4>
-                        <p class="mb-0">Eventos Activos</p>
+            <div class="col-md-3">
+                <div class="card text-white bg-success">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6>Tickets Aprobados</h6>
+                                <h3 th:text="${approvedTicketsCount}">0</h3>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="fas fa-ticket-alt fa-2x opacity-75"></i>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-3 mb-3">
-                <div class="card stats-card">
-                    <div class="card-body text-center">
-                        <i class="fas fa-ticket-alt fa-2x mb-2"></i>
-                        <h4 th:text="${soldTicketsCount}">0</h4>
-                        <p class="mb-0">Tickets Vendidos</p>
+            <div class="col-md-3">
+                <div class="card text-white bg-warning">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6>Solicitudes Pendientes</h6>
+                                <h3 th:text="${pendingRequestsCount}">0</h3>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="fas fa-clock fa-2x opacity-75"></i>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-3 mb-3">
-                <div class="card stats-card">
-                    <div class="card-body text-center">
-                        <i class="fas fa-2x mb-2">₲</i>
-                        <h4>Gs.<span th:text="${#numbers.formatDecimal(totalRevenue, 1, 'POINT', 2, 'COMMA')}">0</span>
-                        </h4>
-                        <p class="mb-0">Ingresos Totales</p>
+            <div class="col-md-3">
+                <div class="card text-white bg-info">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6>Ingresos Estimados</h6>
+                                <h3 th:text="'$' + ${#numbers.formatDecimal(totalRevenue, 0, 2)}">$0</h3>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="fas fa-dollar-sign fa-2x opacity-75"></i>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Lista de eventos -->
         <div class="row">
+            <!-- Solicitudes Pendientes -->
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-clock text-warning me-2"></i>Solicitudes Pendientes
+                        </h5>
+                        <a th:href="@{/organizer/requests}" class="btn btn-outline-primary btn-sm">
+                            Ver Todas
+                        </a>
+                    </div>
+                    <div class="card-body">
+                        <div th:if="${#lists.isEmpty(recentRequests)}" class="text-center text-muted py-4">
+                            <i class="fas fa-inbox fa-3x mb-3 opacity-50"></i>
+                            <p>No hay solicitudes pendientes</p>
+                        </div>
+
+                        <div th:each="request : ${recentRequests}" class="border-bottom pb-3 mb-3">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1" th:text="${request.fullName}"></h6>
+                                    <p class="mb-1 text-muted" th:text="${request.event.name}"></p>
+                                    <small class="text-muted">
+                                        <span th:text="${request.quantity} + ' tickets'"></span> • 
+                                        <span th:text="${#temporals.format(request.requestDate, 'dd/MM HH:mm')}"></span>
+                                    </small>
+                                </div>
+                                <div>
+                                    <a th:href="@{/organizer/requests/{id}(id=${request.id})}" 
+                                       class="btn btn-outline-primary btn-sm">
+                                        Ver
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Acciones Rápidas -->
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-bolt text-primary me-2"></i>Acciones Rápidas
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <a th:href="@{/organizer/events/create}" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>Crear Nuevo Evento
+                            </a>
+                            <a th:href="@{/organizer/requests}" class="btn btn-outline-warning">
+                                <i class="fas fa-clock me-2"></i>
+                                Gestionar Solicitudes 
+                                <span th:if="${pendingRequestsCount > 0}" class="badge bg-warning text-dark ms-2" 
+                                      th:text="${pendingRequestsCount}"></span>
+                            </a>
+                            <a th:href="@{/organizer/profile}" class="btn btn-outline-secondary">
+                                <i class="fas fa-user-cog me-2"></i>Configurar Perfil
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Enlace público -->
+                <div class="card mt-3">
+                    <div class="card-body text-center">
+                        <h6><i class="fas fa-globe me-2"></i>Página Pública</h6>
+                        <p class="text-muted mb-2">Comparte esta página para que vean tus eventos:</p>
+                        <a href="/events" class="btn btn-outline-info btn-sm" target="_blank">
+                            <i class="fas fa-external-link-alt me-2"></i>Ver Eventos Públicos
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lista de Eventos -->
+        <div class="row mt-4">
             <div class="col-12">
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">
                             <i class="fas fa-calendar-alt me-2"></i>Mis Eventos
                         </h5>
-                        <a th:href="@{/organizer/events/create}" class="btn btn-sm btn-primary">
-                            <i class="fas fa-plus me-1"></i>Nuevo Evento
+                        <a th:href="@{/organizer/events/create}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Nuevo Evento
                         </a>
                     </div>
                     <div class="card-body">
-                        <div th:if="${#lists.isEmpty(events)}" class="text-center py-5">
-                            <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
-                            <h5 class="text-muted">No has creado eventos aún</h5>
-                            <p class="text-muted">Crea tu primer evento para comenzar a vender tickets</p>
+                        <div th:if="${#lists.isEmpty(events)}" class="text-center text-muted py-5">
+                            <i class="fas fa-calendar-plus fa-4x mb-3 opacity-50"></i>
+                            <h5>No tienes eventos creados</h5>
+                            <p>Crea tu primer evento para comenzar a recibir solicitudes de tickets</p>
                             <a th:href="@{/organizer/events/create}" class="btn btn-primary">
                                 <i class="fas fa-plus me-2"></i>Crear Mi Primer Evento
                             </a>
                         </div>
 
-                        <div th:unless="${#lists.isEmpty(events)}" class="row">
-                            <div th:each="event : ${events}" class="col-lg-6 mb-4">
-                                <div class="card event-card h-100">
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between align-items-start mb-3">
-                                            <h5 class="card-title mb-0" th:text="${event.name}">Nombre del Evento</h5>
-                                            <span th:switch="${event.status.name()}" class="badge status-badge">
+                        <div th:unless="${#lists.isEmpty(events)}" class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Evento</th>
+                                        <th>Fecha</th>
+                                        <th>Estado</th>
+                                        <th>Capacidad</th>
+                                        <th>Solicitudes</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="event : ${events}">
+                                        <td>
+                                            <strong th:text="${event.name}"></strong>
+                                            <br>
+                                            <small class="text-muted" th:text="${event.venue}"></small>
+                                        </td>
+                                        <td th:text="${#temporals.format(event.eventDate, 'dd/MM/yyyy HH:mm')}"></td>
+                                        <td>
+                                            <span th:switch="${event.status.name()}"
+                                                  class="badge">
                                                 <span th:case="'ACTIVE'" class="badge bg-success">Activo</span>
                                                 <span th:case="'CANCELLED'" class="badge bg-danger">Cancelado</span>
-                                                <span th:case="'COMPLETED'" class="badge bg-secondary">Completado</span>
+                                                <span th:case="'COMPLETED'" class="badge bg-secondary">Finalizado</span>
                                             </span>
-                                        </div>
-
-                                        <p class="card-text text-muted small" th:text="${event.description}">Descripción
-                                        </p>
-
-                                        <div class="row small mb-3">
-                                            <div class="col-6">
-                                                <i class="fas fa-calendar text-primary me-1"></i>
-                                                <span
-                                                    th:text="${#temporals.format(event.eventDate, 'dd/MM/yyyy HH:mm')}">Fecha</span>
-                                            </div>
-                                            <div class="col-6">
-                                                <i class="fas fa-map-marker-alt text-primary me-1"></i>
-                                                <span th:text="${event.venue}">Lugar</span>
-                                            </div>
-                                        </div>
-
-                                        <div class="row small mb-3">
-                                            <div class="col-6">
-                                                <i class="fas fa-users text-info me-1"></i>
-                                                <span
-                                                    th:text="${event.capacity - event.availableTickets} + '/' + ${event.capacity}">0/100</span>
-                                                vendidos
-                                            </div>
-                                            <div class="col-6">
-                                                <i class="fas text-success me-1">Gs.</i>
-                                                <span th:text="${event.price}">Precio</span>
-                                            </div>
-                                        </div>
-
-                                        <!-- Barra de progreso de tickets vendidos -->
-                                        <div class="progress mb-3" style="height: 8px;">
-                                            <div class="progress-bar"
-                                                th:style="'width: ' + ${(event.capacity - event.availableTickets) * 100 / event.capacity} + '%'">
-                                            </div>
-                                        </div>
-
-                                        <!-- Acciones -->
-                                        <div class="btn-group w-100" role="group">
-                                            <a th:href="@{/organizer/events/{id}/tickets(id=${event.id})}"
-                                                class="btn btn-outline-primary btn-sm">
-                                                <i class="fas fa-list me-1"></i>Tickets
+                                        </td>
+                                        <td th:text="${event.capacity} + ' personas'"></td>
+                                        <td class="text-center">
+                                            <a th:href="@{/organizer/events/{id}/requests(id=${event.id})}" 
+                                               class="text-decoration-none">
+                                                <i class="fas fa-envelope me-1"></i>
+                                                <span th:text="${@ticketRequestService.getPendingTicketsCount(event)} + '/' + ${@ticketRequestService.getApprovedTicketsCount(event)}"></span>
                                             </a>
-                                            <a th:href="@{/organizer/events/{id}/scanner(id=${event.id})}"
-                                                class="btn btn-outline-success btn-sm">
-                                                <i class="fas fa-qrcode me-1"></i>Escanear
-                                            </a>
-                                            <a th:href="@{/organizer/events/{id}/edit(id=${event.id})}"
-                                                class="btn btn-outline-warning btn-sm"
-                                                th:if="${event.status.name() == 'ACTIVE'}">
-                                                <i class="fas fa-edit me-1"></i>Editar
-                                            </a>
-                                        </div>
-
-                                        <!-- Acciones de estado (solo para eventos activos) -->
-                                        <div th:if="${event.status.name() == 'ACTIVE'}" class="mt-2">
-                                            <div class="btn-group w-100" role="group">
-                                                <form th:action="@{/organizer/events/{id}/cancel(id=${event.id})}"
-                                                    method="post" class="d-inline flex-fill">
-                                                    <button type="submit" class="btn btn-outline-danger btn-sm w-100"
-                                                        onclick="return confirm('¿Estás seguro de cancelar este evento?')">
-                                                        <i class="fas fa-ban me-1"></i>Cancelar
-                                                    </button>
-                                                </form>
-                                                <form th:action="@{/organizer/events/{id}/delete(id=${event.id})}"
-                                                    method="post" class="d-inline flex-fill ms-1"
-                                                    th:if="${event.availableTickets == event.capacity}">
-                                                    <button type="submit" class="btn btn-outline-dark btn-sm w-100"
-                                                        onclick="return confirm('¿Estás seguro de eliminar este evento?')">
-                                                        <i class="fas fa-trash me-1"></i>Eliminar
-                                                    </button>
-                                                </form>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <a th:href="@{/organizer/events/{id}/edit(id=${event.id})}" 
+                                                   class="btn btn-outline-primary">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <a th:href="@{/organizer/events/{id}/requests(id=${event.id})}" 
+                                                   class="btn btn-outline-info">
+                                                    <i class="fas fa-list"></i>
+                                                </a>
+                                                <button th:if="${event.status.name() == 'ACTIVE'}"
+                                                        type="button" class="btn btn-outline-danger"
+                                                        onclick="confirmCancel([[${event.id}]], '[[${event.name}]]')">
+                                                    <i class="fas fa-ban"></i>
+                                                </button>
                                             </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -248,7 +261,38 @@
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-</body>
+    <!-- Modal de confirmación para cancelar evento -->
+    <div class="modal fade" id="cancelModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Cancelar Evento</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Estás seguro de que quieres cancelar el evento "<span id="eventName"></span>"?</p>
+                    <p class="text-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Esta acción no se puede deshacer y se notificará a todas las personas con solicitudes aprobadas.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No, Mantener Evento</button>
+                    <form id="cancelForm" method="post" style="display: inline;">
+                        <button type="submit" class="btn btn-danger">Sí, Cancelar Evento</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function confirmCancel(eventId, eventName) {
+            document.getElementById('eventName').textContent = eventName;
+            document.getElementById('cancelForm').action = '/organizer/events/' + eventId + '/cancel';
+            new bootstrap.Modal(document.getElementById('cancelModal')).show();
+        }
+    </script>
+</body>
 </html>

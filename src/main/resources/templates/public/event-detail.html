@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${event.name} + ' - QRTAC'">Evento - QRTAC</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" th:href="@{/}">
+                <i class="fas fa-qrcode me-2"></i>QRTAC
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" th:href="@{/events}">
+                    <i class="fas fa-arrow-left me-1"></i>Volver a Eventos
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Mensajes -->
+        <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>
+            <span th:text="${success}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <span th:text="${error}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <div class="row">
+            <!-- Información del evento -->
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-body">
+                        <h1 class="card-title" th:text="${event.name}"></h1>
+                        <p class="text-muted mb-3">
+                            Organizado por <span th:text="${event.organizer.fullName}"></span>
+                        </p>
+
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-calendar-alt text-primary me-2"></i>Fecha y Hora</h6>
+                                <p th:text="${#temporals.format(event.eventDate, 'dd/MM/yyyy HH:mm')}"></p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-map-marker-alt text-primary me-2"></i>Lugar</h6>
+                                <p th:text="${event.venue}"></p>
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-users text-primary me-2"></i>Capacidad</h6>
+                                <p th:text="${event.capacity} + ' personas'"></p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-ticket-alt text-primary me-2"></i>Tickets Disponibles</h6>
+                                <p th:text="${availableTickets} + ' disponibles'"></p>
+                            </div>
+                        </div>
+
+                        <h6><i class="fas fa-info-circle text-primary me-2"></i>Descripción</h6>
+                        <p th:text="${event.description}"></p>
+
+                        <div class="alert alert-info">
+                            <h6>Precio por Ticket</h6>
+                            <h4 class="mb-0 text-primary" th:text="'Gs. ' + ${#numbers.formatDecimal(event.price, 0, 2)}"></h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Formulario de solicitud -->
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-paper-plane me-2"></i>Solicitar Tickets
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div th:if="${availableTickets <= 0}" class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            No hay tickets disponibles actualmente.
+                        </div>
+
+                        <form th:if="${availableTickets > 0}" th:action="@{/events/{id}/request(id=${event.id})}" 
+                              th:object="${ticketRequest}" method="post">
+                            <input type="hidden" th:field="*{id}" />
+
+                            <div class="mb-3">
+                                <label for="fullName" class="form-label">Nombre Completo *</label>
+                                <input type="text" class="form-control" th:field="*{fullName}" 
+                                       th:classappend="${#fields.hasErrors('fullName')} ? 'is-invalid' : ''" required>
+                                <div th:if="${#fields.hasErrors('fullName')}" class="invalid-feedback">
+                                    <span th:errors="*{fullName}"></span>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email *</label>
+                                <input type="email" class="form-control" th:field="*{email}" 
+                                       th:classappend="${#fields.hasErrors('email')} ? 'is-invalid' : ''" required>
+                                <div th:if="${#fields.hasErrors('email')}" class="invalid-feedback">
+                                    <span th:errors="*{email}"></span>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="phone" class="form-label">Teléfono/WhatsApp *</label>
+                                <input type="tel" class="form-control" th:field="*{phone}" 
+                                       th:classappend="${#fields.hasErrors('phone')} ? 'is-invalid' : ''" required>
+                                <div th:if="${#fields.hasErrors('phone')}" class="invalid-feedback">
+                                    <span th:errors="*{phone}"></span>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="quantity" class="form-label">Cantidad de Tickets *</label>
+                                <select class="form-select" th:field="*{quantity}" required>
+                                    <option value="1">1 ticket</option>
+                                    <option value="2">2 tickets</option>
+                                    <option value="3">3 tickets</option>
+                                    <option value="4">4 tickets</option>
+                                    <option value="5">5 tickets</option>
+                                    <option th:if="${availableTickets > 5}" value="6">6 tickets</option>
+                                    <option th:if="${availableTickets > 6}" value="7">7 tickets</option>
+                                    <option th:if="${availableTickets > 7}" value="8">8 tickets</option>
+                                    <option th:if="${availableTickets > 8}" value="9">9 tickets</option>
+                                    <option th:if="${availableTickets > 9}" value="10">10 tickets</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="preferredContactMethod" class="form-label">Método de Contacto Preferido</label>
+                                <select class="form-select" th:field="*{preferredContactMethod}">
+                                    <option value="EMAIL">Email</option>
+                                    <option value="WHATSAPP">WhatsApp</option>
+                                    <option value="PHONE">Teléfono</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="message" class="form-label">Mensaje (opcional)</label>
+                                <textarea class="form-control" th:field="*{message}" rows="3" 
+                                         placeholder="Algún comentario o solicitud especial..."></textarea>
+                            </div>
+
+                            <div class="alert alert-info">
+                                <small>
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Tu solicitud será revisada por el organizador, quien te contactará 
+                                    para confirmar y enviar los tickets.
+                                </small>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-paper-plane me-2"></i>Enviar Solicitud
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Información del organizador -->
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="fas fa-user me-2"></i>Organizador</h6>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-2"><strong th:text="${event.organizer.fullName}"></strong></p>
+                        <p class="mb-1 text-muted">
+                            <i class="fas fa-envelope me-2"></i>
+                            <span th:text="${event.organizer.email}"></span>
+                        </p>
+                        <p th:if="${event.organizer.phone}" class="mb-0 text-muted">
+                            <i class="fas fa-phone me-2"></i>
+                            <span th:text="${event.organizer.phone}"></span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Consultar estado de solicitud -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h6><i class="fas fa-search me-2"></i>¿Ya enviaste una solicitud?</h6>
+                        <p class="text-muted">Puedes consultar el estado de tu solicitud aquí:</p>
+                        <a href="/requests/status" class="btn btn-outline-secondary">
+                            <i class="fas fa-search me-2"></i>Consultar Estado de Solicitud
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

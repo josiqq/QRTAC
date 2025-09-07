@@ -22,16 +22,16 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .authorizeHttpRequests(authz -> authz
-                // Rutas públicas
-                .requestMatchers("/", "/home", "/events", "/register/**", "/login", 
-                                "/css/**", "/js/**", "/images/**", "/validate/**").permitAll()
-                // Rutas para organizadores
+                // Rutas completamente públicas (sin autenticación)
+                .requestMatchers("/", "/home", "/events", "/events/**", 
+                                "/requests/**", "/about", "/contact", 
+                                "/css/**", "/js/**", "/images/**", 
+                                "/register/organizer", "/login", "/error").permitAll()
+                // API endpoints públicos
+                .requestMatchers("/api/events/**", "/api/public/**").permitAll()
+                // Solo rutas para organizadores requieren autenticación
                 .requestMatchers("/organizer/**").hasRole("ORGANIZER")
-                // Rutas para clientes
-                .requestMatchers("/client/**").hasRole("CLIENT")
-                // Rutas de tickets (ambos roles)
-                .requestMatchers("/tickets/**", "/qr/**").authenticated()
-                // Cualquier otra ruta requiere autenticación
+                // Cualquier otra ruta requiere ser organizador (más restrictivo)
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form
@@ -46,7 +46,7 @@ public class SecurityConfig {
                 .permitAll()
             )
             .csrf(csrf -> csrf
-                .ignoringRequestMatchers("/validate/**") // Para API de validación
+                .ignoringRequestMatchers("/api/**", "/requests/**") // Para APIs públicas
             );
 
         return http.build();
@@ -64,10 +64,9 @@ public class SecurityConfig {
             
             if ("ROLE_ORGANIZER".equals(role)) {
                 response.sendRedirect("/organizer/dashboard");
-            } else if ("ROLE_CLIENT".equals(role)) {
-                response.sendRedirect("/client/dashboard");
             } else {
-                response.sendRedirect("/");
+                // Fallback - solo organizadores pueden loguearse
+                response.sendRedirect("/login?error=true");
             }
         };
     }

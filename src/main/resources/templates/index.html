@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QRTAC - Sistema de Tickets con QR</title>
+    <title>QRTAC - Sistema de Solicitudes de Tickets</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -19,9 +19,15 @@
         .feature-card:hover {
             transform: translateY(-5px);
         }
-        .qr-icon {
+        .icon-large {
             font-size: 4rem;
             color: #667eea;
+        }
+        .event-card {
+            transition: transform 0.2s;
+        }
+        .event-card:hover {
+            transform: translateY(-2px);
         }
     </style>
 </head>
@@ -43,13 +49,13 @@
                     <li class="nav-item">
                         <a class="nav-link" th:href="@{/events}">Eventos</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/requests/status}">Consultar Solicitud</a>
+                    </li>
                 </ul>
                 <ul class="navbar-nav">
                     <li class="nav-item">
-                        <a class="nav-link" th:href="@{/login}">Iniciar Sesión</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" th:href="@{/register}">Registrarse</a>
+                        <a class="nav-link" th:href="@{/login}">Organizadores</a>
                     </li>
                 </ul>
             </div>
@@ -60,74 +66,127 @@
     <section class="hero-section text-center">
         <div class="container">
             <h1 class="display-4 fw-bold mb-4">
-                <i class="fas fa-qrcode me-3"></i>
-                Sistema de Tickets con QR
+                <i class="fas fa-paper-plane me-3"></i>
+                Solicitá Tickets para Eventos
             </h1>
             <p class="lead mb-5">
-                Gestioná eventos y validá entradas de forma fácil y segura con códigos QR únicos
+                Encontrá eventos increíbles y solicitá tus tickets de forma fácil y segura. 
+                Los organizadores se pondrán en contacto contigo directamente.
             </p>
             <div class="row justify-content-center">
                 <div class="col-md-4 mb-3">
-                    <a th:href="@{/register/organizer}" class="btn btn-light btn-lg w-100">
-                        <i class="fas fa-users me-2"></i>
-                        Soy Organizador
+                    <a th:href="@{/events}" class="btn btn-light btn-lg w-100">
+                        <i class="fas fa-calendar me-2"></i>
+                        Ver Eventos Disponibles
                     </a>
                 </div>
                 <div class="col-md-4 mb-3">
-                    <a th:href="@{/register/client}" class="btn btn-outline-light btn-lg w-100">
-                        <i class="fas fa-ticket-alt me-2"></i>
-                        Soy Cliente
+                    <a th:href="@{/requests/status}" class="btn btn-outline-light btn-lg w-100">
+                        <i class="fas fa-search me-2"></i>
+                        Consultar Mi Solicitud
                     </a>
                 </div>
+            </div>
+            
+            <div class="mt-4">
+                <small class="text-white-50">
+                    ¿Eres organizador? <a th:href="@{/register/organizer}" class="text-white">Regístrate aquí</a>
+                </small>
+            </div>
+        </div>
+    </section>
+
+    <!-- Eventos Destacados -->
+    <section th:unless="${#lists.isEmpty(featuredEvents)}" class="py-5">
+        <div class="container">
+            <div class="row text-center mb-5">
+                <div class="col">
+                    <h2 class="display-5 fw-bold">Eventos Destacados</h2>
+                    <p class="lead text-muted">Descubrí los próximos eventos y solicitá tus tickets</p>
+                </div>
+            </div>
+            <div class="row">
+                <div th:each="event : ${featuredEvents}" class="col-md-4 mb-4">
+                    <div class="card event-card h-100 border-0 shadow">
+                        <div class="card-body">
+                            <h5 class="card-title" th:text="${event.name}"></h5>
+                            <p class="text-muted mb-2">
+                                <i class="fas fa-calendar me-2"></i>
+                                <span th:text="${#temporals.format(event.eventDate, 'dd/MM/yyyy HH:mm')}"></span>
+                            </p>
+                            <p class="text-muted mb-2">
+                                <i class="fas fa-map-marker-alt me-2"></i>
+                                <span th:text="${event.venue}"></span>
+                            </p>
+                            <p class="text-muted mb-3">
+                                <i class="fas fa-user me-2"></i>
+                                <span th:text="${event.organizer.fullName}"></span>
+                            </p>
+                            <p class="card-text" th:text="${#strings.abbreviate(event.description, 80)}"></p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="h5 text-primary mb-0" 
+                                      th:text="${#numbers.formatDecimal(event.price, 0, 2)}"></span>
+                                <a th:href="@{/events/{id}(id=${event.id})}" class="btn btn-primary">
+                                    <i class="fas fa-paper-plane me-1"></i>Solicitar
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="text-center mt-4">
+                <a th:href="@{/events}" class="btn btn-outline-primary btn-lg">
+                    <i class="fas fa-calendar me-2"></i>Ver Todos los Eventos
+                </a>
             </div>
         </div>
     </section>
 
     <!-- Features Section -->
-    <section class="py-5">
+    <section class="py-5 bg-light">
         <div class="container">
             <div class="row text-center mb-5">
                 <div class="col">
-                    <h2 class="display-5 fw-bold">Características Principales</h2>
-                    <p class="lead text-muted">Todo lo que necesitás para gestionar eventos y tickets</p>
+                    <h2 class="display-5 fw-bold">¿Cómo Funciona?</h2>
+                    <p class="lead text-muted">Proceso simple y directo para obtener tus tickets</p>
                 </div>
             </div>
             <div class="row">
                 <div class="col-md-4 mb-4">
-                    <div class="card feature-card h-100 border-0 shadow">
+                    <div class="card feature-card h-100 border-0 shadow-sm">
                         <div class="card-body text-center p-4">
-                            <div class="qr-icon mb-3">
-                                <i class="fas fa-qrcode"></i>
+                            <div class="icon-large mb-3">
+                                <i class="fas fa-search"></i>
                             </div>
-                            <h4>Códigos QR Únicos</h4>
+                            <h4>1. Explorá Eventos</h4>
                             <p class="text-muted">
-                                Cada ticket tiene un código QR único y seguro que no puede ser duplicado
+                                Navegá por los eventos disponibles y encontrá el que más te interese
                             </p>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-4 mb-4">
-                    <div class="card feature-card h-100 border-0 shadow">
+                    <div class="card feature-card h-100 border-0 shadow-sm">
                         <div class="card-body text-center p-4">
-                            <div class="qr-icon mb-3">
-                                <i class="fas fa-calendar-alt"></i>
+                            <div class="icon-large mb-3">
+                                <i class="fas fa-paper-plane"></i>
                             </div>
-                            <h4>Gestión de Eventos</h4>
+                            <h4>2. Solicitá Tickets</h4>
                             <p class="text-muted">
-                                Creá y administrá eventos fácilmente con control total sobre capacidad y precios
+                                Completá un formulario simple con tus datos y la cantidad de tickets que necesitas
                             </p>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-4 mb-4">
-                    <div class="card feature-card h-100 border-0 shadow">
+                    <div class="card feature-card h-100 border-0 shadow-sm">
                         <div class="card-body text-center p-4">
-                            <div class="qr-icon mb-3">
-                                <i class="fas fa-mobile-alt"></i>
+                            <div class="icon-large mb-3">
+                                <i class="fas fa-handshake"></i>
                             </div>
-                            <h4>Validación Móvil</h4>
+                            <h4>3. Contacto Directo</h4>
                             <p class="text-muted">
-                                Escaneá y valida tickets desde cualquier dispositivo móvil en tiempo real
+                                El organizador revisa tu solicitud y te contacta para coordinar pago y entrega
                             </p>
                         </div>
                     </div>
@@ -136,51 +195,111 @@
         </div>
     </section>
 
-    <!-- How it Works -->
-    <section class="py-5 bg-light">
+    <!-- Ventajas Section -->
+    <section class="py-5">
         <div class="container">
             <div class="row text-center mb-5">
                 <div class="col">
-                    <h2 class="display-5 fw-bold">¿Cómo Funciona?</h2>
+                    <h2 class="display-5 fw-bold">¿Por Qué Elegirnos?</h2>
                 </div>
             </div>
             <div class="row">
-                <div class="col-md-3 mb-4 text-center">
-                    <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
-                        <span class="fw-bold">1</span>
+                <div class="col-md-4 mb-4 text-center">
+                    <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                         style="width: 60px; height: 60px;">
+                        <i class="fas fa-shield-alt"></i>
                     </div>
-                    <h5>Crear Evento</h5>
-                    <p class="text-muted">El organizador crea un evento con todos los detalles</p>
+                    <h5>Proceso Seguro</h5>
+                    <p class="text-muted">Contacto directo con organizadores verificados, sin intermediarios</p>
                 </div>
-                <div class="col-md-3 mb-4 text-center">
-                    <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
-                        <span class="fw-bold">2</span>
+                <div class="col-md-4 mb-4 text-center">
+                    <div class="bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                         style="width: 60px; height: 60px;">
+                        <i class="fas fa-comments"></i>
                     </div>
-                    <h5>Comprar Ticket</h5>
-                    <p class="text-muted">Los clientes compran tickets y reciben un QR único</p>
+                    <h5>Comunicación Directa</h5>
+                    <p class="text-muted">Hablá directamente con el organizador para resolver dudas y coordinar</p>
                 </div>
-                <div class="col-md-3 mb-4 text-center">
-                    <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
-                        <span class="fw-bold">3</span>
+                <div class="col-md-4 mb-4 text-center">
+                    <div class="bg-info text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                         style="width: 60px; height: 60px;">
+                        <i class="fas fa-mobile-alt"></i>
                     </div>
-                    <h5>Presentar QR</h5>
-                    <p class="text-muted">El cliente presenta su código QR en la entrada</p>
+                    <h5>Método Flexible</h5>
+                    <p class="text-muted">Recibí tus tickets por email, WhatsApp o el método que prefieras</p>
                 </div>
-                <div class="col-md-3 mb-4 text-center">
-                    <div class="bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
-                        <i class="fas fa-check"></i>
+            </div>
+        </div>
+    </section>
+
+    <!-- Organizadores Section -->
+    <section class="py-5 bg-dark text-white">
+        <div class="container text-center">
+            <h2 class="display-5 fw-bold mb-4">¿Organizás Eventos?</h2>
+            <p class="lead mb-4">
+                Únite a nuestra plataforma y gestioná las solicitudes de tickets de manera profesional
+            </p>
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <i class="fas fa-users fa-2x mb-2"></i>
+                            <h6>Gestión Completa</h6>
+                            <small>Administra eventos y solicitudes desde un panel intuitivo</small>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <i class="fas fa-envelope fa-2x mb-2"></i>
+                            <h6>Comunicación Automática</h6>
+                            <small>Notificaciones automáticas por email para ti y los solicitantes</small>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <i class="fas fa-chart-line fa-2x mb-2"></i>
+                            <h6>Estadísticas</h6>
+                            <small>Visualiza métricas de tus eventos y solicitudes</small>
+                        </div>
                     </div>
-                    <h5>Validar Entrada</h5>
-                    <p class="text-muted">El organizador escanea y valida el ticket al instante</p>
                 </div>
+            </div>
+            <div class="mt-4">
+                <a th:href="@{/register/organizer}" class="btn btn-primary btn-lg me-3">
+                    <i class="fas fa-user-plus me-2"></i>Registrarse como Organizador
+                </a>
+                <a th:href="@{/login}" class="btn btn-outline-light btn-lg">
+                    <i class="fas fa-sign-in-alt me-2"></i>Ya soy Organizador
+                </a>
             </div>
         </div>
     </section>
 
     <!-- Footer -->
     <footer class="bg-dark text-white py-4">
-        <div class="container text-center">
-            <p class="mb-0">&copy; 2025 QRTAC - Sistema de Tickets con QR. Todos los derechos reservados.</p>
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5><i class="fas fa-qrcode me-2"></i>QRTAC</h5>
+                    <p class="text-muted">Sistema de solicitudes de tickets para eventos. Conectamos organizadores con asistentes de manera directa y segura.</p>
+                </div>
+                <div class="col-md-3">
+                    <h6>Enlaces Útiles</h6>
+                    <ul class="list-unstyled">
+                        <li><a th:href="@{/events}" class="text-muted text-decoration-none">Ver Eventos</a></li>
+                        <li><a th:href="@{/requests/status}" class="text-muted text-decoration-none">Consultar Solicitud</a></li>
+                        <li><a th:href="@{/register/organizer}" class="text-muted text-decoration-none">Ser Organizador</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-3">
+                    <h6>Soporte</h6>
+                    <ul class="list-unstyled">
+                        <li><a href="/contact" class="text-muted text-decoration-none">Contacto</a></li>
+                        <li><a href="/about" class="text-muted text-decoration-none">Acerca de</a></li>
+                        <li><small class="text-muted">¿Problemas? Escríbenos</small></li>
+                    </ul>
+                </div>
+            </div>
+            <hr class="my-4">
+            <div class="text-center">
+                <p class="mb-0">&copy; 2025 QRTAC - Sistema de Solicitudes de Tickets. Todos los derechos reservados.</p>
+            </div>
         </div>
     </footer>
 

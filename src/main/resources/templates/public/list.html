@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,29 +13,35 @@
             border: none;
             height: 100%;
         }
+
         .event-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
         }
+
         .event-price {
             color: #28a745;
             font-weight: bold;
             font-size: 1.25rem;
         }
+
         .event-status {
             position: absolute;
             top: 15px;
             right: 15px;
             z-index: 2;
         }
+
         .tickets-available {
             color: #6c757d;
             font-size: 0.9rem;
         }
+
         .event-date {
             color: #007bff;
             font-weight: 600;
         }
+
         .page-header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -42,6 +49,7 @@
         }
     </style>
 </head>
+
 <body>
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
@@ -58,15 +66,15 @@
                         <a class="nav-link" th:href="@{/}">Inicio</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link active" th:href="@{/events}">Eventos</a>
+                        <a class="nav-link" th:href="@{/events}">Eventos</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/requests/status}">Consultar Solicitud</a>
                     </li>
                 </ul>
                 <ul class="navbar-nav">
                     <li class="nav-item">
-                        <a class="nav-link" th:href="@{/login}">Iniciar Sesión</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" th:href="@{/register}">Registrarse</a>
+                        <a class="nav-link" th:href="@{/login}">Organizadores</a>
                     </li>
                 </ul>
             </div>
@@ -131,7 +139,8 @@
                             <!-- Event Date -->
                             <p class="event-date mb-2">
                                 <i class="fas fa-calendar me-2"></i>
-                                <span th:text="${#temporals.format(event.eventDate, 'dd/MM/yyyy HH:mm')}">01/01/2024 20:00</span>
+                                <span th:text="${#temporals.format(event.eventDate, 'dd/MM/yyyy HH:mm')}">01/01/2024
+                                    20:00</span>
                             </p>
 
                             <!-- Event Venue -->
@@ -141,8 +150,8 @@
                             </p>
 
                             <!-- Event Description -->
-                            <p class="card-text text-muted mb-3" 
-                               th:text="${#strings.length(event.description) > 100 ? #strings.substring(event.description, 0, 100) + '...' : event.description}">
+                            <p class="card-text text-muted mb-3"
+                                th:text="${#strings.length(event.description) > 100 ? #strings.substring(event.description, 0, 100) + '...' : event.description}">
                                 Descripción del evento...
                             </p>
 
@@ -151,12 +160,13 @@
                                 <div class="col-6">
                                     <small class="tickets-available">
                                         <i class="fas fa-users me-1"></i>
-                                        <span th:text="${event.availableTickets}">50</span> / 
+                                        <span th:text="${event.availableTickets}">50</span> /
                                         <span th:text="${event.capacity}">100</span> disponibles
                                     </small>
                                 </div>
                                 <div class="col-6 text-end">
-                                    <span class="event-price" th:text="'$' + ${#numbers.formatDecimal(event.price, 0, 'COMMA', 2, 'POINT')}">
+                                    <span class="event-price"
+                                        th:text="'Gs. ' + ${#numbers.formatDecimal(event.price, 0, 2)}">
                                         $25.00
                                     </span>
                                 </div>
@@ -166,9 +176,8 @@
                         <!-- Card Footer with Actions -->
                         <div class="card-footer bg-transparent border-0 pt-0">
                             <div class="d-grid gap-2">
-                                <a th:href="@{/events/{id}(id=${event.id})}" 
-                                   class="btn btn-primary"
-                                   th:classappend="${!event.hasAvailableTickets()} ? 'disabled' : ''">
+                                <a th:href="@{/events/{id}(id=${event.id})}" class="btn btn-primary"
+                                    th:classappend="${!event.hasAvailableTickets()} ? 'disabled' : ''">
                                     <i class="fas fa-eye me-2"></i>
                                     Ver Detalles
                                 </a>
@@ -205,12 +214,12 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script>
         // Simple search functionality
-        document.getElementById('searchInput').addEventListener('input', function(e) {
+        document.getElementById('searchInput').addEventListener('input', function (e) {
             const searchTerm = e.target.value.toLowerCase();
             const eventCards = document.querySelectorAll('.event-card').forEach(card => {
                 const eventName = card.querySelector('.card-title').textContent.toLowerCase();
                 const eventVenue = card.querySelector('.fa-map-marker-alt').nextElementSibling.textContent.toLowerCase();
-                
+
                 if (eventName.includes(searchTerm) || eventVenue.includes(searchTerm)) {
                     card.closest('.col-md-6').style.display = 'block';
                 } else {
@@ -220,4 +229,5 @@
         });
     </script>
 </body>
+
 </html>
