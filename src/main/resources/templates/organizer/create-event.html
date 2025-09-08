@@ -80,7 +80,7 @@
                                     <div th:if="${#fields.hasErrors('capacity')}" class="invalid-feedback" th:errors="*{capacity}"></div>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label for="price" class="form-label">Precio (USD)</label>
+                                    <label for="price" class="form-label">Precio (PYG)</label>
                                     <input type="number" class="form-control" id="price" th:field="*{price}" min="0.00" step="0.01"
                                            th:classappend="${#fields.hasErrors('price')} ? 'is-invalid' : ''" required>
                                     <div th:if="${#fields.hasErrors('price')}" class="invalid-feedback" th:errors="*{price}"></div>

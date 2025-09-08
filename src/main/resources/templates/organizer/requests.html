@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestionar Solicitudes - QRTAC</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .status-badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+        }
+        .request-card {
+            transition: all 0.2s ease;
+            border-left: 4px solid transparent;
+        }
+        .request-card:hover {
+            shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+        }
+        .request-card.pending {
+            border-left-color: #ffc107;
+        }
+        .request-card.approved {
+            border-left-color: #198754;
+        }
+        .request-card.rejected {
+            border-left-color: #dc3545;
+        }
+        .request-card.cancelled {
+            border-left-color: #6c757d;
+        }
+        .quick-actions {
+            position: sticky;
+            top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" th:href="@{/organizer/dashboard}">
+                <i class="fas fa-qrcode me-2"></i>QRTAC - Solicitudes
+            </a>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text me-3">
+                    <i class="fas fa-user me-1"></i><span th:text="${organizer.fullName}"></span>
+                </span>
+                <a class="nav-link" th:href="@{/organizer/dashboard}">
+                    <i class="fas fa-tachometer-alt me-1"></i>Dashboard
+                </a>
+                <a class="nav-link" th:href="@{/logout}">
+                    <i class="fas fa-sign-out-alt me-1"></i>Salir
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <!-- Mensajes -->
+        <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>
+            <span th:text="${success}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        
+        <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            <span th:text="${error}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2><i class="fas fa-envelope text-primary me-2"></i>Gestión de Solicitudes</h2>
+                        <p class="text-muted">Administra las solicitudes de tickets para tus eventos</p>
+                    </div>
+                    <a th:href="@{/organizer/dashboard}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Volver al Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Filtros y Estadísticas -->
+            <div class="col-lg-3">
+                <div class="quick-actions">
+                    <!-- Estadísticas -->
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Resumen</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row text-center">
+                                <div class="col-6 border-end">
+                                    <div class="text-warning">
+                                        <i class="fas fa-clock fa-2x mb-2"></i>
+                                        <h5 th:text="${pendingRequests.size()}">0</h5>
+                                        <small>Pendientes</small>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-info">
+                                        <i class="fas fa-list fa-2x mb-2"></i>
+                                        <h5 th:text="${allRequests.size()}">0</h5>
+                                        <small>Total</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filtros -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-filter me-2"></i>Filtros</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-outline-warning" onclick="filterRequests('pending')">
+                                    <i class="fas fa-clock me-2"></i>Solo Pendientes
+                                </button>
+                                <button class="btn btn-outline-success" onclick="filterRequests('approved')">
+                                    <i class="fas fa-check me-2"></i>Aprobadas
+                                </button>
+                                <button class="btn btn-outline-danger" onclick="filterRequests('rejected')">
+                                    <i class="fas fa-times me-2"></i>Rechazadas
+                                </button>
+                                <button class="btn btn-outline-secondary" onclick="filterRequests('all')">
+                                    <i class="fas fa-list me-2"></i>Todas
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista de Solicitudes -->
+            <div class="col-lg-9">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-envelope me-2"></i>Solicitudes de Tickets
+                            <span class="badge bg-warning ms-2" th:text="${pendingRequests.size()}"></span>
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Sin solicitudes -->
+                        <div th:if="${#lists.isEmpty(allRequests)}" class="text-center text-muted py-5">
+                            <i class="fas fa-inbox fa-4x mb-3 opacity-50"></i>
+                            <h5>No hay solicitudes aún</h5>
+                            <p>Las solicitudes de tickets aparecerán aquí cuando los usuarios las envíen</p>
+                        </div>
+
+                        <!-- Lista de solicitudes -->
+                        <div th:unless="${#lists.isEmpty(allRequests)}" id="requestsList">
+                            <div th:each="request : ${allRequests}" 
+                                 class="request-card card mb-3" 
+                                 th:classappend="${request.status.name().toLowerCase()}"
+                                 th:data-status="${request.status.name().toLowerCase()}">
+                                <div class="card-body">
+                                    <div class="row align-items-center">
+                                        <!-- Información del solicitante -->
+                                        <div class="col-md-4">
+                                            <div class="d-flex align-items-center">
+                                                <div class="avatar-placeholder bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                                    <i class="fas fa-user"></i>
+                                                </div>
+                                                <div>
+                                                    <h6 class="mb-0" th:text="${request.fullName}"></h6>
+                                                    <small class="text-muted" th:text="${request.email}"></small>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Información del evento y solicitud -->
+                                        <div class="col-md-4">
+                                            <div>
+                                                <strong th:text="${request.event.name}"></strong>
+                                                <br>
+                                                <small class="text-muted">
+                                                    <i class="fas fa-ticket-alt me-1"></i>
+                                                    <span th:text="${request.quantity}"></span> tickets
+                                                </small>
+                                                <br>
+                                                <small class="text-muted">
+                                                    <i class="fas fa-clock me-1"></i>
+                                                    <span th:text="${#temporals.format(request.requestDate, 'dd/MM/yyyy HH:mm')}"></span>
+                                                </small>
+                                            </div>
+                                        </div>
+
+                                        <!-- Estado y acciones -->
+                                        <div class="col-md-4 text-end">
+                                            <!-- Estado -->
+                                            <div class="mb-2">
+                                                <span th:switch="${request.status.name()}" class="badge status-badge">
+                                                    <span th:case="'PENDING'" class="badge bg-warning">
+                                                        <i class="fas fa-clock me-1"></i>Pendiente
+                                                    </span>
+                                                    <span th:case="'APPROVED'" class="badge bg-success">
+                                                        <i class="fas fa-check me-1"></i>Aprobada
+                                                    </span>
+                                                    <span th:case="'REJECTED'" class="badge bg-danger">
+                                                        <i class="fas fa-times me-1"></i>Rechazada
+                                                    </span>
+                                                    <span th:case="'CANCELLED'" class="badge bg-secondary">
+                                                        <i class="fas fa-ban me-1"></i>Cancelada
+                                                    </span>
+                                                </span>
+                                            </div>
+
+                                            <!-- Botones de acción -->
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <a th:href="@{/organizer/requests/{id}(id=${request.id})}" 
+                                                   class="btn btn-outline-primary">
+                                                    <i class="fas fa-eye me-1"></i>Ver
+                                                </a>
+
+                                                <!-- Botones de aprobación/rechazo solo para pendientes -->
+                                                <div th:if="${request.status.name() == 'PENDING'}">
+                                                    <button type="button" class="btn btn-outline-success"
+                                                            onclick="showApproveModal([[${request.id}]], '[[${request.fullName}]]', [[${request.quantity}]])">
+                                                        <i class="fas fa-check me-1"></i>Aprobar
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-danger"
+                                                            onclick="showRejectModal([[${request.id}]], '[[${request.fullName}]]')">
+                                                        <i class="fas fa-times me-1"></i>Rechazar
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <!-- Información adicional para procesadas -->
+                                            <div th:if="${request.processedDate != null}" class="mt-2">
+                                                <small class="text-muted">
+                                                    Procesada el <span th:text="${#temporals.format(request.processedDate, 'dd/MM/yyyy HH:mm')}"></span>
+                                                    <br>por <span th:text="${request.processedBy?.fullName}"></span>
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Mensaje del solicitante -->
+                                    <div th:if="${request.message != null and !#strings.isEmpty(request.message)}" class="row mt-3">
+                                        <div class="col-12">
+                                            <div class="alert alert-light mb-0">
+                                                <small>
+                                                    <strong>Mensaje:</strong> 
+                                                    <span th:text="${request.message}"></span>
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Notas del organizador -->
+                                    <div th:if="${request.organizerNotes != null and !#strings.isEmpty(request.organizerNotes)}" class="row mt-2">
+                                        <div class="col-12">
+                                            <div class="alert alert-info mb-0">
+                                                <small>
+                                                    <strong>Notas del organizador:</strong> 
+                                                    <span th:text="${request.organizerNotes}"></span>
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Aprobar Solicitud -->
+    <div class="modal fade" id="approveModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-check me-2"></i>Aprobar Solicitud
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="approveForm" method="post">
+                    <div class="modal-body">
+                        <div class="alert alert-success">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>¿Aprobar solicitud de <span id="approveUserName"></span>?</strong>
+                            <br>Se aprobarán <span id="approveQuantity"></span> tickets y se enviará un email de confirmación.
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="approveNotes" class="form-label">Notas para el solicitante (opcional)</label>
+                            <textarea class="form-control" id="approveNotes" name="notes" rows="3" 
+                                      placeholder="Instrucciones de pago, punto de encuentro, etc..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-check me-2"></i>Aprobar Solicitud
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Rechazar Solicitud -->
+    <div class="modal fade" id="rejectModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-times me-2"></i>Rechazar Solicitud
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="rejectForm" method="post">
+                    <div class="modal-body">
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>¿Rechazar solicitud de <span id="rejectUserName"></span>?</strong>
+                            <br>Se enviará un email informando sobre el rechazo.
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="rejectNotes" class="form-label">Motivo del rechazo</label>
+                            <textarea class="form-control" id="rejectNotes" name="notes" rows="3" 
+                                      placeholder="Explica brevemente el motivo del rechazo..." required></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-times me-2"></i>Rechazar Solicitud
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Funciones para los modales
+        function showApproveModal(requestId, userName, quantity) {
+            document.getElementById('approveUserName').textContent = userName;
+            document.getElementById('approveQuantity').textContent = quantity;
+            document.getElementById('approveForm').action = '/organizer/requests/' + requestId + '/approve';
+            document.getElementById('approveNotes').value = '';
+            new bootstrap.Modal(document.getElementById('approveModal')).show();
+        }
+
+        function showRejectModal(requestId, userName) {
+            document.getElementById('rejectUserName').textContent = userName;
+            document.getElementById('rejectForm').action = '/organizer/requests/' + requestId + '/reject';
+            document.getElementById('rejectNotes').value = '';
+            new bootstrap.Modal(document.getElementById('rejectModal')).show();
+        }
+
+        // Función de filtrado
+        function filterRequests(status) {
+            const cards = document.querySelectorAll('.request-card');
+            
+            cards.forEach(card => {
+                if (status === 'all' || card.dataset.status === status) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            // Actualizar botones activos
+            document.querySelectorAll('.card .btn-outline-warning, .card .btn-outline-success, .card .btn-outline-danger, .card .btn-outline-secondary').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Marcar botón activo (esto es opcional, solo visual)
+            event.target.classList.add('active');
+        }
+
+        // Auto-refresh cada 30 segundos para nuevas solicitudes
+        setTimeout(() => {
+            if (document.querySelectorAll('.request-card[data-status="pending"]').length > 0) {
+                location.reload();
+            }
+        }, 30000);
+    </script>
+</body>
+</html>

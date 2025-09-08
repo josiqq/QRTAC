@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solicitudes del Evento - QRTAC</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .event-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .stats-card {
+            transition: transform 0.2s ease;
+        }
+        .stats-card:hover {
+            transform: translateY(-2px);
+        }
+        .request-row {
+            transition: all 0.2s ease;
+            border-left: 4px solid transparent;
+        }
+        .request-row:hover {
+            background-color: #f8f9fa;
+            border-left-color: #007bff;
+        }
+        .request-row.pending {
+            border-left-color: #ffc107;
+        }
+        .request-row.approved {
+            border-left-color: #198754;
+        }
+        .request-row.rejected {
+            border-left-color: #dc3545;
+        }
+        .request-row.cancelled {
+            border-left-color: #6c757d;
+        }
+        .capacity-progress {
+            height: 8px;
+        }
+        .bulk-actions {
+            position: sticky;
+            top: 20px;
+            z-index: 1020;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" th:href="@{/organizer/dashboard}">
+                <i class="fas fa-qrcode me-2"></i>QRTAC - Solicitudes del Evento
+            </a>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text me-3">
+                    <i class="fas fa-user me-1"></i><span th:text="${event.organizer.fullName}"></span>
+                </span>
+                <a class="nav-link" th:href="@{/organizer/requests}">
+                    <i class="fas fa-list me-1"></i>Todas las Solicitudes
+                </a>
+                <a class="nav-link" th:href="@{/organizer/dashboard}">
+                    <i class="fas fa-tachometer-alt me-1"></i>Dashboard
+                </a>
+                <a class="nav-link" th:href="@{/logout}">
+                    <i class="fas fa-sign-out-alt me-1"></i>Salir
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <!-- Mensajes -->
+        <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>
+            <span th:text="${success}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        
+        <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            <span th:text="${error}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item">
+                    <a th:href="@{/organizer/dashboard}">Dashboard</a>
+                </li>
+                <li class="breadcrumb-item">
+                    <a th:href="@{/organizer/requests}">Solicitudes</a>
+                </li>
+                <li class="breadcrumb-item active" aria-current="page">
+                    <span th:text="${event.name}"></span>
+                </li>
+            </ol>
+        </nav>
+
+        <!-- Header del Evento -->
+        <div class="event-header rounded p-4 mb-4">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h2 class="mb-1">
+                        <i class="fas fa-calendar-alt me-2"></i>
+                        <span th:text="${event.name}"></span>
+                    </h2>
+                    <p class="mb-2" th:text="${event.description}"></p>
+                    <div class="d-flex flex-wrap gap-3">
+                        <div>
+                            <i class="fas fa-calendar me-1"></i>
+                            <span th:text="${#temporals.format(event.eventDate, 'dd/MM/yyyy HH:mm')}"></span>
+                        </div>
+                        <div>
+                            <i class="fas fa-map-marker-alt me-1"></i>
+                            <span th:text="${event.venue}"></span>
+                        </div>
+                        <div>
+                            <i class="fas fa-dollar-sign me-1"></i>
+                            <span th:text="'$' + ${#numbers.formatDecimal(event.price, 0, 2)}"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <div class="d-grid gap-2">
+                        <a th:href="@{/organizer/events/{id}/edit(id=${event.id})}" class="btn btn-light">
+                            <i class="fas fa-edit me-2"></i>Editar Evento
+                        </a>
+                        <a th:href="@{/events/{id}(id=${event.id})}" target="_blank" class="btn btn-outline-light">
+                            <i class="fas fa-external-link-alt me-2"></i>Ver Página Pública
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Estadísticas y Acciones -->
+            <div class="col-lg-4">
+                <div class="bulk-actions">
+                    <!-- Estadísticas del Evento -->
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <div class="stats-card card text-center">
+                                <div class="card-body py-3">
+                                    <i class="fas fa-users text-primary fa-2x mb-2"></i>
+                                    <h4 th:text="${event.capacity}">0</h4>
+                                    <small class="text-muted">Capacidad Total</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="stats-card card text-center">
+                                <div class="card-body py-3">
+                                    <i class="fas fa-check-circle text-success fa-2x mb-2"></i>
+                                    <h4 th:text="${approvedTickets}">0</h4>
+                                    <small class="text-muted">Aprobados</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <div class="stats-card card text-center">
+                                <div class="card-body py-3">
+                                    <i class="fas fa-clock text-warning fa-2x mb-2"></i>
+                                    <h4 th:text="${pendingTickets}">0</h4>
+                                    <small class="text-muted">Pendientes</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="stats-card card text-center">
+                                <div class="card-body py-3">
+                                    <i class="fas fa-ticket-alt text-info fa-2x mb-2"></i>
+                                    <h4 th:text="${availableCapacity}">0</h4>
+                                    <small class="text-muted">Disponibles</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Progreso de Capacidad -->
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h6><i class="fas fa-chart-line me-2"></i>Ocupación del Evento</h6>
+                            <div class="mb-2">
+                                <div class="d-flex justify-content-between">
+                                    <small>Aprobados</small>
+                                    <small><span th:text="${approvedTickets}"></span>/<span th:text="${event.capacity}"></span></small>
+                                </div>
+                                <div class="progress capacity-progress mb-2">
+                                    <div class="progress-bar bg-success" role="progressbar" 
+                                         th:style="'width: ' + ${(approvedTickets * 100) / event.capacity} + '%'">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <div class="d-flex justify-content-between">
+                                    <small>Pendientes</small>
+                                    <small><span th:text="${pendingTickets}"></span></small>
+                                </div>
+                                <div class="progress capacity-progress">
+                                    <div class="progress-bar bg-warning" role="progressbar" 
+                                         th:style="'width: ' + ${(pendingTickets * 100) / event.capacity} + '%'">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Ingresos Estimados -->
+                    <div class="card mb-3">
+                        <div class="card-body text-center">
+                            <h6><i class="fas fa-dollar-sign me-2"></i>Ingresos</h6>
+                            <div class="row">
+                                <div class="col-12 mb-2">
+                                    <small class="text-muted">Confirmados:</small>
+                                    <h5 class="text-success mb-0" th:text="'Gs.' + ${#numbers.formatDecimal(event.price * approvedTickets, 0, 2)}"></h5>
+                                </div>
+                                <div class="col-12">
+                                    <small class="text-muted">Potencial:</small>
+                                    <h6 class="text-warning mb-0" th:text="'Gs.' + ${#numbers.formatDecimal(event.price * (approvedTickets + pendingTickets), 0, 2)}"></h6>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Acciones Rápidas -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-bolt me-2"></i>Acciones Rápidas</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-success" onclick="approveAllPending()" 
+                                        th:disabled="${pendingTickets == 0}">
+                                    <i class="fas fa-check-double me-2"></i>
+                                    Aprobar Todas Pendientes
+                                </button>
+                                <button class="btn btn-outline-primary" onclick="filterRequests('pending')">
+                                    <i class="fas fa-filter me-2"></i>Solo Pendientes
+                                </button>
+                                <button class="btn btn-outline-secondary" onclick="exportRequests()">
+                                    <i class="fas fa-download me-2"></i>Exportar Lista
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista de Solicitudes -->
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-list me-2"></i>
+                            Solicitudes de Tickets 
+                            <span class="badge bg-secondary ms-2" th:text="${requests.size()}"></span>
+                        </h5>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button type="button" class="btn btn-outline-secondary active" onclick="filterRequests('all')">
+                                Todas
+                            </button>
+                            <button type="button" class="btn btn-outline-warning" onclick="filterRequests('pending')">
+                                Pendientes
+                            </button>
+                            <button type="button" class="btn btn-outline-success" onclick="filterRequests('approved')">
+                                Aprobadas
+                            </button>
+                            <button type="button" class="btn btn-outline-danger" onclick="filterRequests('rejected')">
+                                Rechazadas
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <!-- Sin solicitudes -->
+                        <div th:if="${#lists.isEmpty(requests)}" class="text-center text-muted py-5">
+                            <i class="fas fa-inbox fa-4x mb-3 opacity-50"></i>
+                            <h5>No hay solicitudes para este evento</h5>
+                            <p>Las solicitudes aparecerán aquí cuando los usuarios las envíen</p>
+                            <a th:href="@{/events/{id}(id=${event.id})}" target="_blank" class="btn btn-primary">
+                                <i class="fas fa-external-link-alt me-2"></i>Ver Página Pública del Evento
+                            </a>
+                        </div>
+
+                        <!-- Lista de solicitudes -->
+                        <div th:unless="${#lists.isEmpty(requests)}" class="table-responsive">
+                            <table class="table table-hover mb-0" id="requestsTable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>
+                                            <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                                        </th>
+                                        <th>Solicitante</th>
+                                        <th>Contacto</th>
+                                        <th>Cantidad</th>
+                                        <th>Fecha</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="request : ${requests}" 
+                                        class="request-row" 
+                                        th:classappend="${request.status.name().toLowerCase()}"
+                                        th:data-status="${request.status.name().toLowerCase()}">
+                                        <td>
+                                            <input type="checkbox" class="request-checkbox" 
+                                                   th:value="${request.id}" 
+                                                   th:disabled="${request.status.name() != 'PENDING'}">
+                                        </td>
+                                        <td>
+                                            <div>
+                                                <strong th:text="${request.fullName}"></strong>
+                                                <br>
+                                                <small class="text-muted" th:text="${request.email}"></small>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex gap-1">
+                                                <a th:href="'mailto:' + ${request.email}" 
+                                                   class="btn btn-outline-primary btn-sm" title="Email">
+                                                    <i class="fas fa-envelope"></i>
+                                                </a>
+                                                <a th:href="'tel:' + ${request.phone}" 
+                                                   class="btn btn-outline-success btn-sm" title="Teléfono">
+                                                    <i class="fas fa-phone"></i>
+                                                </a>
+                                                <a th:href="'https://wa.me/' + ${#strings.replace(request.phone, '+', '')}" 
+                                                   target="_blank" class="btn btn-outline-success btn-sm" title="WhatsApp">
+                                                    <i class="fab fa-whatsapp"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-info" th:text="${request.quantity}"></span>
+                                        </td>
+                                        <td>
+                                            <small th:text="${#temporals.format(request.requestDate, 'dd/MM HH:mm')}"></small>
+                                        </td>
+                                        <td>
+                                            <span th:switch="${request.status.name()}" class="badge">
+                                                <span th:case="'PENDING'" class="badge bg-warning">
+                                                    <i class="fas fa-clock me-1"></i>Pendiente
+                                                </span>
+                                                <span th:case="'APPROVED'" class="badge bg-success">
+                                                    <i class="fas fa-check me-1"></i>Aprobada
+                                                </span>
+                                                <span th:case="'REJECTED'" class="badge bg-danger">
+                                                    <i class="fas fa-times me-1"></i>Rechazada
+                                                </span>
+                                                <span th:case="'CANCELLED'" class="badge bg-secondary">
+                                                    <i class="fas fa-ban me-1"></i>Cancelada
+                                                </span>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <a th:href="@{/organizer/requests/{id}(id=${request.id})}" 
+                                                   class="btn btn-outline-primary" title="Ver detalles">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                
+                                                <div th:if="${request.status.name() == 'PENDING'}">
+                                                    <button type="button" class="btn btn-outline-success" title="Aprobar"
+                                                            onclick="showApproveModal([[${request.id}]], '[[${request.fullName}]]', [[${request.quantity}]])">
+                                                        <i class="fas fa-check"></i>
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-danger" title="Rechazar"
+                                                            onclick="showRejectModal([[${request.id}]], '[[${request.fullName}]]')">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Acciones masivas -->
+                <div class="card mt-3" id="bulkActionsCard" style="display: none;">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span id="selectedCount">0 solicitudes seleccionadas</span>
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-success" onclick="approveSelected()">
+                                    <i class="fas fa-check me-2"></i>Aprobar Seleccionadas
+                                </button>
+                                <button type="button" class="btn btn-danger" onclick="rejectSelected()">
+                                    <i class="fas fa-times me-2"></i>Rechazar Seleccionadas
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Aprobar Solicitud -->
+    <div class="modal fade" id="approveModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-check me-2"></i>Aprobar Solicitud
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="approveForm" method="post">
+                    <div class="modal-body">
+                        <div class="alert alert-success">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>¿Aprobar solicitud de <span id="approveUserName"></span>?</strong>
+                            <br>Se aprobarán <span id="approveQuantity"></span> tickets y se enviará un email de confirmación.
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="approveNotes" class="form-label">Notas para el solicitante</label>
+                            <textarea class="form-control" id="approveNotes" name="notes" rows="3" 
+                                      placeholder="Instrucciones de pago, punto de encuentro, etc..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-check me-2"></i>Aprobar Solicitud
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Rechazar Solicitud -->
+    <div class="modal fade" id="rejectModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-times me-2"></i>Rechazar Solicitud
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="rejectForm" method="post">
+                    <div class="modal-body">
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>¿Rechazar solicitud de <span id="rejectUserName"></span>?</strong>
+                            <br>Se enviará un email informando sobre el rechazo.
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="rejectNotes" class="form-label">Motivo del rechazo</label>
+                            <textarea class="form-control" id="rejectNotes" name="notes" rows="3" 
+                                      placeholder="Explica brevemente el motivo del rechazo..." required></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-times me-2"></i>Rechazar Solicitud
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Aprobar Todas -->
+    <div class="modal fade" id="approveAllModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-check-double me-2"></i>Aprobar Todas las Pendientes
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>¿Aprobar todas las solicitudes pendientes?</strong>
+                        <br>Esta acción enviará emails de confirmación a todos los solicitantes.
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="approveAllNotes" class="form-label">Notas generales (opcional)</label>
+                        <textarea class="form-control" id="approveAllNotes" rows="3" 
+                                  placeholder="Mensaje que se incluirá en todos los emails..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-success" onclick="confirmApproveAll()">
+                        <i class="fas fa-check-double me-2"></i>Aprobar Todas
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Variables globales
+        let selectedRequests = new Set();
+
+        // Funciones para los modales
+        function showApproveModal(requestId, userName, quantity) {
+            document.getElementById('approveUserName').textContent = userName;
+            document.getElementById('approveQuantity').textContent = quantity;
+            document.getElementById('approveForm').action = '/organizer/requests/' + requestId + '/approve';
+            document.getElementById('approveNotes').value = '';
+            new bootstrap.Modal(document.getElementById('approveModal')).show();
+        }
+
+        function showRejectModal(requestId, userName) {
+            document.getElementById('rejectUserName').textContent = userName;
+            document.getElementById('rejectForm').action = '/organizer/requests/' + requestId + '/reject';
+            document.getElementById('rejectNotes').value = '';
+            new bootstrap.Modal(document.getElementById('rejectModal')).show();
+        }
+
+        // Función de filtrado
+        function filterRequests(status) {
+            const rows = document.querySelectorAll('.request-row');
+            
+            rows.forEach(row => {
+                if (status === 'all' || row.dataset.status === status) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            // Actualizar botones activos
+            document.querySelectorAll('.btn-group .btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Limpiar selecciones si se filtra
+            clearSelections();
+        }
+
+        // Funciones de selección
+        function toggleSelectAll() {
+            const selectAll = document.getElementById('selectAll');
+            const checkboxes = document.querySelectorAll('.request-checkbox:not(:disabled)');
+            
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = selectAll.checked;
+                if (selectAll.checked) {
+                    selectedRequests.add(checkbox.value);
+                } else {
+                    selectedRequests.delete(checkbox.value);
+                }
+            });
+            
+            updateSelectedCount();
+        }
+
+        function updateSelectedCount() {
+            const count = selectedRequests.size;
+            document.getElementById('selectedCount').textContent = count + ' solicitudes seleccionadas';
+            document.getElementById('bulkActionsCard').style.display = count > 0 ? 'block' : 'none';
+        }
+
+        function clearSelections() {
+            selectedRequests.clear();
+            document.getElementById('selectAll').checked = false;
+            document.querySelectorAll('.request-checkbox').forEach(cb => cb.checked = false);
+            updateSelectedCount();
+        }
+
+        // Event listeners para checkboxes individuales
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.request-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    if (this.checked) {
+                        selectedRequests.add(this.value);
+                    } else {
+                        selectedRequests.delete(this.value);
+                    }
+                    updateSelectedCount();
+                });
+            });
+        });
+
+        // Funciones para acciones masivas
+        function approveAllPending() {
+            new bootstrap.Modal(document.getElementById('approveAllModal')).show();
+        }
+
+        function confirmApproveAll() {
+            const notes = document.getElementById('approveAllNotes').value;
+            const pendingCheckboxes = document.querySelectorAll('.request-checkbox:not(:disabled)');
+            
+            // En una implementación real, harías una llamada AJAX aquí
+            // Por ahora, simulamos la aprobación individual
+            pendingCheckboxes.forEach(checkbox => {
+                const requestId = checkbox.value;
+                // Aquí harías la llamada para aprobar cada solicitud
+                console.log('Aprobando solicitud:', requestId, 'con notas:', notes);
+            });
+            
+            bootstrap.Modal.getInstance(document.getElementById('approveAllModal')).hide();
+            location.reload(); // Recargar para ver los cambios
+        }
+
+        function approveSelected() {
+            if (selectedRequests.size === 0) return;
+            
+            if (confirm('¿Aprobar ' + selectedRequests.size + ' solicitudes seleccionadas?')) {
+                // Implementar lógica de aprobación masiva
+                selectedRequests.forEach(requestId => {
+                    console.log('Aprobando solicitud:', requestId);
+                });
+                location.reload();
+            }
+        }
+
+        function rejectSelected() {
+            if (selectedRequests.size === 0) return;
+            
+            const reason = prompt('Motivo del rechazo para las solicitudes seleccionadas:');
+            if (reason && reason.trim()) {
+                selectedRequests.forEach(requestId => {
+                    console.log('Rechazando solicitud:', requestId, 'motivo:', reason);
+                });
+                location.reload();
+            }
+        }
+
+        function exportRequests() {
+            // Implementar exportación a CSV/Excel
+            alert('Funcionalidad de exportación próximamente...');
+        }
+    </script>
+</body>
+</html>
