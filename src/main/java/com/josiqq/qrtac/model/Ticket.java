@@ -22,7 +22,7 @@ public class Ticket {
     @Column(unique = true, nullable = false)
     private String ticketCode; // Código único del ticket (UUID)
     
-    @Column(unique = true, nullable = false)
+    @Column(unique = true, nullable = false, length = 500)
     private String qrToken; // Token encriptado para el QR
     
     @ManyToOne(fetch = FetchType.LAZY)

@@ -10,12 +10,18 @@ import com.resend.services.emails.model.CreateEmailResponse;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.ArrayList;
+import java.net.URI;
+import java.net.http.HttpResponse;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import java.util.Base64;
+
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 @Service
 public class EmailService {
@@ -28,7 +34,7 @@ public class EmailService {
     @Value("${app.email.from:noreply@qrtac.com}")
     private String fromEmail;
 
-    @Value("${app.base-url:http://localhost:8080}")
+    @Value("${app.base-url:https://qrtac.store}")
     private String baseUrl;
 
     @Value("${resend.api-key:}")
@@ -177,7 +183,7 @@ public class EmailService {
         CreateEmailOptions params = CreateEmailOptions.builder()
                 .from(fromEmail)
                 .to(request.getEmail())
-                .subject("¡Solicitud aprobada! - " + request.getEvent().getName())
+                .subject("🎉 ¡Solicitud aprobada! - " + request.getEvent().getName())
                 .text(content)
                 .build();
 
@@ -267,101 +273,161 @@ public class EmailService {
         String organizerEmail = request.getEvent().getOrganizer().getEmail();
 
         StringBuilder contact = new StringBuilder();
-        contact.append("INFORMACIÓN DE CONTACTO DEL ORGANIZADOR:\n");
-        contact.append("Nombre: ").append(request.getEvent().getOrganizer().getFullName()).append("\n");
-        contact.append("Email: ").append(organizerEmail).append("\n");
+
+        contact.append("<h3>📞 INFORMACIÓN DE CONTACTO DEL ORGANIZADOR:</h3>");
+        contact.append("<ul>");
+        contact.append("<li><b>Nombre:</b> ").append(request.getEvent().getOrganizer().getFullName()).append("</li>");
+        contact.append("<li><b>Email:</b> <a href=\"mailto:").append(organizerEmail).append("\">")
+                .append(organizerEmail).append("</a></li>");
 
         if (organizerPhone != null && !organizerPhone.isEmpty()) {
-            contact.append("Teléfono/WhatsApp: ").append(organizerPhone).append("\n");
+            contact.append("<li><b>Teléfono/WhatsApp:</b> <a href=\"https://wa.me/")
+                    .append(organizerPhone.replaceAll("[^0-9]", "")) // limpia caracteres no numéricos
+                    .append("\" target=\"_blank\">")
+                    .append(organizerPhone)
+                    .append("</a></li>");
         }
+        contact.append("</ul>");
 
-        if ("WHATSAPP".equals(contactMethod) && organizerPhone != null) {
-            contact.append("\nTus tickets serán enviados por WhatsApp al número: ").append(request.getPhone());
-        } else if ("EMAIL".equals(contactMethod)) {
-            contact.append("\nTus tickets serán enviados por email a: ").append(request.getEmail());
+        if ("WHATSAPP".equalsIgnoreCase(contactMethod) && organizerPhone != null) {
+            contact.append("<p>📲 Tus tickets serán enviados también por <b>WhatsApp</b> al número: <b>")
+                    .append(request.getPhone())
+                    .append("</b></p>");
         }
 
         return contact.toString();
     }
 
     /**
-     * Envía email de aprobación con tickets adjuntos
+     * Envía email de aprobación con tickets como PDFs individuales adjuntos
      */
     public void sendRequestApprovalWithTickets(TicketRequest request, List<Ticket> tickets) {
         try {
             String subject = "🎉 ¡Solicitud aprobada! Aquí tienes tus tickets - " + request.getEvent().getName();
-            String content = buildApprovalEmailContent(request, tickets);
 
-            Map<String, byte[]> qrImages = ticketService.generateQRImagesForTickets(tickets);
+            // Generar PDFs individuales para cada ticket
+            Map<String, byte[]> ticketPdfs = ticketService.generateIndividualTicketPDFs(tickets);
 
-            List<Map<String, Object>> attachments = qrImages.entrySet().stream()
-                    .map(entry -> Map.<String, Object>of(
-                            "filename", "Ticket_QR_" + entry.getKey() + ".png",
-                            "content", Base64.getEncoder().encodeToString(entry.getValue())))
-                    .collect(Collectors.toList());
+            // Convertir PDFs en adjuntos (filename + base64 content)
+            JSONArray attachments = new JSONArray(
+                    ticketPdfs.entrySet().stream().map(entry -> new JSONObject()
+                            .put("filename", "Ticket_" + entry.getKey() + ".pdf")
+                            .put("content", Base64.getEncoder().encodeToString(entry.getValue())))
+                            .collect(Collectors.toList()));
 
-            // Si quieres incluir un PDF:
-            // byte[] pdf = ticketService.generateTicketsPDF(tickets);
-            // attachments.add(Map.of(
-            // "filename", "Tickets_" + request.getEvent().getName() + ".pdf",
-            // "content", Base64.getEncoder().encodeToString(pdf)
-            // ));
+            // Construir el JSON para Resend API
+            JSONObject payload = new JSONObject()
+                    .put("from", fromEmail)
+                    .put("to", request.getEmail())
+                    .put("subject", subject)
+                    .put("html", buildApprovalEmailContentHtml(request, tickets))
+                    .put("attachments", attachments);
 
-            CreateEmailOptions options = CreateEmailOptions.builder()
-                    .from(fromEmail)
-                    .to(request.getEmail())
-                    .subject(subject)
-                    .text(content)
+            // Construir la request HTTP
+            HttpRequest httpReq = HttpRequest.newBuilder()
+                    .uri(URI.create("https://api.resend.com/emails"))
+                    .header("Authorization", "Bearer " + resendApiKey)
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(payload.toString()))
                     .build();
 
-            CreateEmailResponse response = resend.emails().send(options);
-            System.out.println("Email con tickets enviado. ID: " + response.getId());
+            // Enviar
+            HttpResponse<String> httpResp = HttpClient.newHttpClient()
+                    .send(httpReq, HttpResponse.BodyHandlers.ofString());
+
+            // Log del resultado
+            if (httpResp.statusCode() == 200 || httpResp.statusCode() == 201) {
+                JSONObject jsonResp = new JSONObject(httpResp.body());
+                System.out.println("✅ Email con tickets PDF enviado. ID: " + jsonResp.getString("id"));
+                System.out.println("PDFs generados: " + ticketPdfs.size());
+            } else {
+                System.err.println("❌ Error al enviar email: " + httpResp.statusCode() + " -> " + httpResp.body());
+                // Fallback sin adjuntos
+                sendRequestApproval(request);
+            }
 
         } catch (Exception e) {
-            System.err.println("Error enviando email con tickets: " + e.getMessage());
-            sendRequestApproval(request); // fallback
+            System.err.println("❌ Error enviando email con tickets PDF: " + e.getMessage());
+            // Fallback: enviar email normal sin attachments
+            sendRequestApproval(request);
         }
     }
 
-    private String buildApprovalEmailContent(TicketRequest request, List<Ticket> tickets) {
+    /**
+     * Versión alternativa que simula el envío con PDFs cuando no hay API real
+     */
+    public void sendRequestApprovalWithTicketsSimulation(TicketRequest request, List<Ticket> tickets) {
+        if (resend == null || resendApiKey.isEmpty()) {
+            System.out.println("SIMULACIÓN EMAIL - Solicitud aprobada con tickets PDF:");
+            System.out.println("Para: " + request.getEmail());
+            System.out.println("Evento: " + request.getEvent().getName());
+            System.out.println("Cantidad de tickets: " + tickets.size());
+
+            // Generar PDFs individuales
+            Map<String, byte[]> ticketPdfs = ticketService.generateIndividualTicketPDFs(tickets);
+
+            System.out.println("PDFs generados como attachments:");
+            ticketPdfs.keySet().forEach(ticketCode -> {
+                System.out.println("- Ticket_" + ticketCode + ".pdf");
+            });
+
+            return;
+        }
+
+        // Si tienes API real, usar sendRequestApprovalWithTickets
+        sendRequestApprovalWithTickets(request, tickets);
+    }
+
+    private String buildApprovalEmailContentHtml(TicketRequest request, List<Ticket> tickets) {
         StringBuilder content = new StringBuilder();
 
-        content.append("¡Excelente noticia ").append(request.getFullName()).append("!\n\n");
-        content.append("Tu solicitud de tickets ha sido APROBADA y aquí tienes tus tickets digitales:\n\n");
+        content.append("<p>¡Excelente noticia <strong>").append(request.getFullName()).append("</strong>!</p>");
+        content.append("<p>Tu solicitud de tickets ha sido <b>APROBADA</b> y aquí tienes tus tickets digitales:</p>");
 
-        content.append("📋 DETALLES DEL EVENTO:\n");
-        content.append("Evento: ").append(request.getEvent().getName()).append("\n");
-        content.append("Fecha: ").append(request.getEvent().getEventDate()).append("\n");
-        content.append("Lugar: ").append(request.getEvent().getVenue()).append("\n");
-        content.append("Cantidad de tickets: ").append(request.getQuantity()).append("\n");
-        content.append("Precio por ticket: $").append(request.getEvent().getPrice()).append("\n");
-        content.append("Total: $")
+        content.append("<h3>📋 DETALLES DEL EVENTO:</h3>");
+        content.append("<ul>");
+        content.append("<li><b>Evento:</b> ").append(request.getEvent().getName()).append("</li>");
+        content.append("<li><b>Fecha:</b> ").append(request.getEvent().getEventDate()).append("</li>");
+        content.append("<li><b>Lugar:</b> ").append(request.getEvent().getVenue()).append("</li>");
+        content.append("<li><b>Cantidad de tickets:</b> ").append(request.getQuantity()).append("</li>");
+        content.append("<li><b>Precio por ticket:</b> Gs. ").append(request.getEvent().getPrice()).append("</li>");
+        content.append("<li><b>Total:</b> Gs. ")
                 .append(request.getEvent().getPrice().multiply(java.math.BigDecimal.valueOf(request.getQuantity())))
-                .append("\n\n");
+                .append("</li>");
+        content.append("</ul>");
 
         if (request.getOrganizerNotes() != null && !request.getOrganizerNotes().isEmpty()) {
-            content.append("💬 NOTAS DEL ORGANIZADOR:\n");
-            content.append(request.getOrganizerNotes()).append("\n\n");
+            content.append("<h3>💬 NOTAS DEL ORGANIZADOR:</h3>");
+            content.append("<p>").append(request.getOrganizerNotes()).append("</p>");
         }
 
-        content.append("🎫 TUS TICKETS:\n");
+        content.append("<h3>🎫 TUS TICKETS:</h3><ul>");
         for (int i = 0; i < tickets.size(); i++) {
             Ticket ticket = tickets.get(i);
-            content.append("Ticket ").append(i + 1).append(": ").append(ticket.getTicketCode()).append("\n");
+            content.append("<li>Ticket ").append(i + 1).append(": <code>").append(ticket.getTicketCode())
+                    .append("</code></li>");
         }
-        content.append("\n");
+        content.append("</ul>");
 
-        content.append("📱 IMPORTANTE:\n");
-        content.append("• Cada ticket tiene un código QR único adjunto como imagen\n");
-        content.append("• Presenta el QR en la entrada del evento para validación\n");
-        content.append("• Guarda bien estos tickets, los necesitarás para ingresar\n");
-        content.append("• Si tienes problemas, contacta al organizador\n\n");
+        content.append("<h3>📎 ARCHIVOS ADJUNTOS:</h3>");
+        content.append("<ul>");
+        content.append("<li>Cada ticket viene en un PDF individual adjunto a este email</li>");
+        content.append("<li>Cada PDF contiene el código QR único del ticket</li>");
+        content.append("<li>Guarda bien estos archivos PDF, los necesitarás para ingresar al evento</li>");
+        content.append("</ul>");
 
-        content.append(getOrganizerContactInfo(request)).append("\n\n");
+        content.append("<h3>📱 IMPORTANTE:</h3>");
+        content.append("<ul>");
+        content.append("<li>Presenta el código QR de cada PDF en la entrada del evento</li>");
+        content.append("<li>Puedes imprimir los PDFs o mostrarlos desde tu celular</li>");
+        content.append("<li>Cada ticket es único e intransferible</li>");
+        content.append("<li>Si tienes problemas, contacta al organizador</li>");
+        content.append("</ul>");
 
-        content.append("¡Nos vemos en el evento!\n");
-        content.append("Equipo QRTAC");
+        content.append("<p>").append(getOrganizerContactInfo(request)).append("</p>");
+        content.append("<p>¡Nos vemos en el evento!<br>Equipo QRTAC</p>");
 
         return content.toString();
     }
+
 }

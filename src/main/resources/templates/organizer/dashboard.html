@@ -86,7 +86,7 @@
                         <div class="d-flex justify-content-between">
                             <div>
                                 <h6>Ingresos Estimados</h6>
-                                <h3 th:text="'$' + ${#numbers.formatDecimal(totalRevenue, 0, 2)}">$0</h3>
+                                <h3 th:text="'Gs. ' + ${#numbers.formatInteger(totalRevenue, 3, 'POINT')}">$0</h3>
                             </div>
                             <div class="align-self-center">
                                 <i class="fas fa-dollar-sign fa-2x opacity-75"></i>

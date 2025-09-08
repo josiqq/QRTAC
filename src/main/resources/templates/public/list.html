@@ -166,7 +166,7 @@
                                 </div>
                                 <div class="col-6 text-end">
                                     <span class="event-price"
-                                        th:text="'Gs. ' + ${#numbers.formatDecimal(event.price, 0, 2)}">
+                                        th:text="'Gs. ' + ${#numbers.formatInteger(event.price, 3, 'POINT')}">
                                         $25.00
                                     </span>
                                 </div>

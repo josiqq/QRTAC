@@ -73,7 +73,7 @@
 
                         <div class="alert alert-info">
                             <h6>Precio por Ticket</h6>
-                            <h4 class="mb-0 text-primary" th:text="'Gs. ' + ${#numbers.formatDecimal(event.price, 0, 2)}"></h4>
+                            <h4 class="mb-0 text-primary" th:text="'Gs. ' + ${#numbers.formatInteger(event.price, 3, 'POINT')}"></h4>
                         </div>
                     </div>
                 </div>

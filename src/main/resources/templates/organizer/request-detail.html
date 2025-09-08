@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,29 +12,37 @@
             box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
             border-left: 4px solid #007bff;
         }
+
         .detail-card.pending {
             border-left-color: #ffc107;
         }
+
         .detail-card.approved {
             border-left-color: #198754;
         }
+
         .detail-card.rejected {
             border-left-color: #dc3545;
         }
+
         .detail-card.cancelled {
             border-left-color: #6c757d;
         }
+
         .info-row {
             border-bottom: 1px solid #e9ecef;
             padding: 0.75rem 0;
         }
+
         .info-row:last-child {
             border-bottom: none;
         }
+
         .status-timeline {
             position: relative;
             padding-left: 2rem;
         }
+
         .status-timeline::before {
             content: '';
             position: absolute;
@@ -43,10 +52,12 @@
             width: 2px;
             background: #dee2e6;
         }
+
         .timeline-item {
             position: relative;
             margin-bottom: 1.5rem;
         }
+
         .timeline-item::before {
             content: '';
             position: absolute;
@@ -58,16 +69,19 @@
             background: white;
             border: 2px solid #dee2e6;
         }
+
         .timeline-item.active::before {
             background: #0d6efd;
             border-color: #0d6efd;
         }
+
         .action-buttons {
             position: sticky;
             top: 20px;
         }
     </style>
 </head>
+
 <body>
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
@@ -99,7 +113,7 @@
             <span th:text="${success}"></span>
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
-        
+
         <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
             <i class="fas fa-exclamation-circle me-2"></i>
             <span th:text="${error}"></span>
@@ -180,7 +194,8 @@
                                 <div class="info-row">
                                     <strong class="text-muted">Fecha de solicitud:</strong>
                                     <div class="mt-1">
-                                        <span th:text="${#temporals.format(request.requestDate, 'dd/MM/yyyy HH:mm')}"></span>
+                                        <span
+                                            th:text="${#temporals.format(request.requestDate, 'dd/MM/yyyy HH:mm')}"></span>
                                     </div>
                                 </div>
                                 <div class="info-row">
@@ -219,7 +234,8 @@
                                 <div class="row">
                                     <div class="col-6">
                                         <strong>Fecha:</strong><br>
-                                        <span th:text="${#temporals.format(request.event.eventDate, 'dd/MM/yyyy HH:mm')}"></span>
+                                        <span
+                                            th:text="${#temporals.format(request.event.eventDate, 'dd/MM/yyyy HH:mm')}"></span>
                                     </div>
                                     <div class="col-6">
                                         <strong>Lugar:</strong><br>
@@ -232,10 +248,13 @@
                                     <div class="mb-2">
                                         <strong>Precio por ticket:</strong>
                                     </div>
-                                    <h3 class="text-primary mb-2" th:text="'$' + ${#numbers.formatDecimal(request.event.price, 0, 2)}"></h3>
+                                    <h3 class="text-primary mb-2"
+                                        th:text="'Gs. ' + ${#numbers.formatInteger(request.event.price, 3, 'POINT')}">
+                                    </h3>
                                     <div class="alert alert-info mb-0">
                                         <strong>Total solicitado:</strong><br>
-                                        <span th:text="'$' + ${#numbers.formatDecimal(request.event.price * request.quantity, 0, 2)}"></span>
+                                        <span
+                                            th:text="'Gs. ' + ${#numbers.formatInteger(request.event.price * request.quantity, 3, 'POINT')}"></span>
                                     </div>
                                 </div>
                             </div>
@@ -258,7 +277,8 @@
                 </div>
 
                 <!-- Notas del Organizador -->
-                <div th:if="${request.organizerNotes != null and !#strings.isEmpty(request.organizerNotes)}" class="card mb-4">
+                <div th:if="${request.organizerNotes != null and !#strings.isEmpty(request.organizerNotes)}"
+                    class="card mb-4">
                     <div class="card-header">
                         <h5 class="mb-0">
                             <i class="fas fa-sticky-note me-2"></i>Notas del Organizador
@@ -283,16 +303,19 @@
                             <div class="timeline-item active">
                                 <div class="fw-bold">Solicitud Enviada</div>
                                 <div class="text-muted">
-                                    <span th:text="${#temporals.format(request.requestDate, 'dd/MM/yyyy HH:mm')}"></span>
+                                    <span
+                                        th:text="${#temporals.format(request.requestDate, 'dd/MM/yyyy HH:mm')}"></span>
                                 </div>
                             </div>
-                            
+
                             <div th:if="${request.processedDate != null}" class="timeline-item active">
                                 <div class="fw-bold">
-                                    Solicitud <span th:text="${request.status.name() == 'APPROVED' ? 'Aprobada' : 'Rechazada'}"></span>
+                                    Solicitud <span
+                                        th:text="${request.status.name() == 'APPROVED' ? 'Aprobada' : 'Rechazada'}"></span>
                                 </div>
                                 <div class="text-muted">
-                                    <span th:text="${#temporals.format(request.processedDate, 'dd/MM/yyyy HH:mm')}"></span>
+                                    <span
+                                        th:text="${#temporals.format(request.processedDate, 'dd/MM/yyyy HH:mm')}"></span>
                                     por <span th:text="${request.processedBy?.fullName}"></span>
                                 </div>
                             </div>
@@ -314,12 +337,16 @@
                         <div class="card-body">
                             <!-- Solo mostrar botones si está pendiente -->
                             <div th:if="${request.status.name() == 'PENDING'}" class="d-grid gap-2">
-                                <button type="button" class="btn btn-success"
-                                        onclick="showApproveModal([[${request.id}]], '[[${request.fullName}]]', [[${request.quantity}]])">
+                                <!-- CAMBIO PRINCIPAL: Usar data attributes en lugar de onclick -->
+                                <button type="button" class="btn btn-success approve-btn"
+                                    th:data-request-id="${request.id}"
+                                    th:data-user-name="${request.fullName}"
+                                    th:data-quantity="${request.quantity}">
                                     <i class="fas fa-check me-2"></i>Aprobar Solicitud
                                 </button>
-                                <button type="button" class="btn btn-danger"
-                                        onclick="showRejectModal([[${request.id}]], '[[${request.fullName}]]')">
+                                <button type="button" class="btn btn-danger reject-btn"
+                                    th:data-request-id="${request.id}"
+                                    th:data-user-name="${request.fullName}">
                                     <i class="fas fa-times me-2"></i>Rechazar Solicitud
                                 </button>
                             </div>
@@ -333,11 +360,13 @@
                             </div>
 
                             <!-- Botones de navegación -->
-                            <div class="d-grid gap-2" th:classappend="${request.status.name() == 'PENDING' ? 'mt-3' : ''}">
+                            <div class="d-grid gap-2"
+                                th:classappend="${request.status.name() == 'PENDING' ? 'mt-3' : ''}">
                                 <a th:href="@{/organizer/requests}" class="btn btn-outline-primary">
                                     <i class="fas fa-arrow-left me-2"></i>Volver a Solicitudes
                                 </a>
-                                <a th:href="@{/organizer/events/{id}/requests(id=${request.event.id})}" class="btn btn-outline-info">
+                                <a th:href="@{/organizer/events/{id}/requests(id=${request.event.id})}"
+                                    class="btn btn-outline-info">
                                     <i class="fas fa-list me-2"></i>Ver Solicitudes del Evento
                                 </a>
                             </div>
@@ -359,8 +388,8 @@
                                 <a th:href="'tel:' + ${request.phone}" class="btn btn-outline-success btn-sm">
                                     <i class="fas fa-phone me-2"></i>Llamar
                                 </a>
-                                <a th:href="'https://wa.me/' + ${#strings.replace(request.phone, '+', '')}" 
-                                   target="_blank" class="btn btn-outline-success btn-sm">
+                                <a th:href="'https://wa.me/' + ${#strings.replace(request.phone, '+', '')}"
+                                    target="_blank" class="btn btn-outline-success btn-sm">
                                     <i class="fab fa-whatsapp me-2"></i>WhatsApp
                                 </a>
                             </div>
@@ -382,17 +411,19 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <form id="approveForm" method="post">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                     <div class="modal-body">
                         <div class="alert alert-success">
                             <i class="fas fa-info-circle me-2"></i>
                             <strong>¿Aprobar solicitud de <span id="approveUserName"></span>?</strong>
-                            <br>Se aprobarán <span id="approveQuantity"></span> tickets y se enviará un email de confirmación.
+                            <br>Se aprobarán <span id="approveQuantity"></span> tickets y se enviará un email de
+                            confirmación.
                         </div>
-                        
+
                         <div class="mb-3">
                             <label for="approveNotes" class="form-label">Notas para el solicitante</label>
-                            <textarea class="form-control" id="approveNotes" name="notes" rows="4" 
-                                      placeholder="Instrucciones de pago, punto de encuentro, información adicional, etc..."></textarea>
+                            <textarea class="form-control" id="approveNotes" name="notes" rows="4"
+                                placeholder="Instrucciones de pago, punto de encuentro, información adicional, etc..."></textarea>
                             <div class="form-text">
                                 Esta información se incluirá en el email de confirmación que se envía al solicitante.
                             </div>
@@ -420,17 +451,20 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <form id="rejectForm" method="post">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                     <div class="modal-body">
                         <div class="alert alert-warning">
                             <i class="fas fa-exclamation-triangle me-2"></i>
                             <strong>¿Rechazar solicitud de <span id="rejectUserName"></span>?</strong>
                             <br>Se enviará un email informando sobre el rechazo.
                         </div>
-                        
+
                         <div class="mb-3">
-                            <label for="rejectNotes" class="form-label">Motivo del rechazo <span class="text-danger">*</span></label>
-                            <textarea class="form-control" id="rejectNotes" name="notes" rows="4" 
-                                      placeholder="Por favor explica el motivo del rechazo de manera cordial..." required></textarea>
+                            <label for="rejectNotes" class="form-label">Motivo del rechazo <span
+                                    class="text-danger">*</span></label>
+                            <textarea class="form-control" id="rejectNotes" name="notes" rows="4"
+                                placeholder="Por favor explica el motivo del rechazo de manera cordial..."
+                                required></textarea>
                             <div class="form-text">
                                 Este mensaje se enviará al solicitante junto con el email de rechazo.
                             </div>
@@ -449,6 +483,30 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script>
+        // AGREGADO: Event listeners para manejar los clicks de los botones
+        document.addEventListener('DOMContentLoaded', function () {
+            // Botón de aprobación
+            const approveBtn = document.querySelector('.approve-btn');
+            if (approveBtn) {
+                approveBtn.addEventListener('click', function () {
+                    const requestId = this.getAttribute('data-request-id');
+                    const userName = this.getAttribute('data-user-name');
+                    const quantity = this.getAttribute('data-quantity');
+                    showApproveModal(requestId, userName, quantity);
+                });
+            }
+
+            // Botón de rechazo
+            const rejectBtn = document.querySelector('.reject-btn');
+            if (rejectBtn) {
+                rejectBtn.addEventListener('click', function () {
+                    const requestId = this.getAttribute('data-request-id');
+                    const userName = this.getAttribute('data-user-name');
+                    showRejectModal(requestId, userName);
+                });
+            }
+        });
+
         function showApproveModal(requestId, userName, quantity) {
             document.getElementById('approveUserName').textContent = userName;
             document.getElementById('approveQuantity').textContent = quantity;
@@ -465,4 +523,5 @@
         }
     </script>
 </body>
+
 </html>

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,35 +12,45 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
         }
+
         .stats-card {
             transition: transform 0.2s ease;
         }
+
         .stats-card:hover {
             transform: translateY(-2px);
         }
+
         .request-row {
             transition: all 0.2s ease;
             border-left: 4px solid transparent;
         }
+
         .request-row:hover {
             background-color: #f8f9fa;
             border-left-color: #007bff;
         }
+
         .request-row.pending {
             border-left-color: #ffc107;
         }
+
         .request-row.approved {
             border-left-color: #198754;
         }
+
         .request-row.rejected {
             border-left-color: #dc3545;
         }
+
         .request-row.cancelled {
             border-left-color: #6c757d;
         }
+
         .capacity-progress {
             height: 8px;
         }
+
         .bulk-actions {
             position: sticky;
             top: 20px;
@@ -47,6 +58,7 @@
         }
     </style>
 </head>
+
 <body>
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
@@ -78,7 +90,7 @@
             <span th:text="${success}"></span>
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
-        
+
         <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
             <i class="fas fa-exclamation-circle me-2"></i>
             <span th:text="${error}"></span>
@@ -191,11 +203,12 @@
                             <div class="mb-2">
                                 <div class="d-flex justify-content-between">
                                     <small>Aprobados</small>
-                                    <small><span th:text="${approvedTickets}"></span>/<span th:text="${event.capacity}"></span></small>
+                                    <small><span th:text="${approvedTickets}"></span>/<span
+                                            th:text="${event.capacity}"></span></small>
                                 </div>
                                 <div class="progress capacity-progress mb-2">
-                                    <div class="progress-bar bg-success" role="progressbar" 
-                                         th:style="'width: ' + ${(approvedTickets * 100) / event.capacity} + '%'">
+                                    <div class="progress-bar bg-success" role="progressbar"
+                                        th:style="'width: ' + ${(approvedTickets * 100) / event.capacity} + '%'">
                                     </div>
                                 </div>
                             </div>
@@ -205,8 +218,8 @@
                                     <small><span th:text="${pendingTickets}"></span></small>
                                 </div>
                                 <div class="progress capacity-progress">
-                                    <div class="progress-bar bg-warning" role="progressbar" 
-                                         th:style="'width: ' + ${(pendingTickets * 100) / event.capacity} + '%'">
+                                    <div class="progress-bar bg-warning" role="progressbar"
+                                        th:style="'width: ' + ${(pendingTickets * 100) / event.capacity} + '%'">
                                     </div>
                                 </div>
                             </div>
@@ -220,11 +233,15 @@
                             <div class="row">
                                 <div class="col-12 mb-2">
                                     <small class="text-muted">Confirmados:</small>
-                                    <h5 class="text-success mb-0" th:text="'Gs.' + ${#numbers.formatDecimal(event.price * approvedTickets, 0, 2)}"></h5>
+                                    <h5 class="text-success mb-0"
+                                        th:text="'Gs.' + ${#numbers.formatDecimal(event.price * approvedTickets, 0, 2)}">
+                                    </h5>
                                 </div>
                                 <div class="col-12">
                                     <small class="text-muted">Potencial:</small>
-                                    <h6 class="text-warning mb-0" th:text="'Gs.' + ${#numbers.formatDecimal(event.price * (approvedTickets + pendingTickets), 0, 2)}"></h6>
+                                    <h6 class="text-warning mb-0"
+                                        th:text="'Gs.' + ${#numbers.formatDecimal(event.price * (approvedTickets + pendingTickets), 0, 2)}">
+                                    </h6>
                                 </div>
                             </div>
                         </div>
@@ -237,8 +254,8 @@
                         </div>
                         <div class="card-body">
                             <div class="d-grid gap-2">
-                                <button class="btn btn-success" onclick="approveAllPending()" 
-                                        th:disabled="${pendingTickets == 0}">
+                                <button class="btn btn-success" onclick="approveAllPending()"
+                                    th:disabled="${pendingTickets == 0}">
                                     <i class="fas fa-check-double me-2"></i>
                                     Aprobar Todas Pendientes
                                 </button>
@@ -260,11 +277,12 @@
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">
                             <i class="fas fa-list me-2"></i>
-                            Solicitudes de Tickets 
+                            Solicitudes de Tickets
                             <span class="badge bg-secondary ms-2" th:text="${requests.size()}"></span>
                         </h5>
                         <div class="btn-group btn-group-sm" role="group">
-                            <button type="button" class="btn btn-outline-secondary active" onclick="filterRequests('all')">
+                            <button type="button" class="btn btn-outline-secondary active"
+                                onclick="filterRequests('all')">
                                 Todas
                             </button>
                             <button type="button" class="btn btn-outline-warning" onclick="filterRequests('pending')">
@@ -306,14 +324,12 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr th:each="request : ${requests}" 
-                                        class="request-row" 
+                                    <tr th:each="request : ${requests}" class="request-row"
                                         th:classappend="${request.status.name().toLowerCase()}"
                                         th:data-status="${request.status.name().toLowerCase()}">
                                         <td>
-                                            <input type="checkbox" class="request-checkbox" 
-                                                   th:value="${request.id}" 
-                                                   th:disabled="${request.status.name() != 'PENDING'}">
+                                            <input type="checkbox" class="request-checkbox" th:value="${request.id}"
+                                                th:disabled="${request.status.name() != 'PENDING'}">
                                         </td>
                                         <td>
                                             <div>
@@ -324,16 +340,17 @@
                                         </td>
                                         <td>
                                             <div class="d-flex gap-1">
-                                                <a th:href="'mailto:' + ${request.email}" 
-                                                   class="btn btn-outline-primary btn-sm" title="Email">
+                                                <a th:href="'mailto:' + ${request.email}"
+                                                    class="btn btn-outline-primary btn-sm" title="Email">
                                                     <i class="fas fa-envelope"></i>
                                                 </a>
-                                                <a th:href="'tel:' + ${request.phone}" 
-                                                   class="btn btn-outline-success btn-sm" title="Teléfono">
+                                                <a th:href="'tel:' + ${request.phone}"
+                                                    class="btn btn-outline-success btn-sm" title="Teléfono">
                                                     <i class="fas fa-phone"></i>
                                                 </a>
-                                                <a th:href="'https://wa.me/' + ${#strings.replace(request.phone, '+', '')}" 
-                                                   target="_blank" class="btn btn-outline-success btn-sm" title="WhatsApp">
+                                                <a th:href="'https://wa.me/' + ${#strings.replace(request.phone, '+', '')}"
+                                                    target="_blank" class="btn btn-outline-success btn-sm"
+                                                    title="WhatsApp">
                                                     <i class="fab fa-whatsapp"></i>
                                                 </a>
                                             </div>
@@ -342,7 +359,8 @@
                                             <span class="badge bg-info" th:text="${request.quantity}"></span>
                                         </td>
                                         <td>
-                                            <small th:text="${#temporals.format(request.requestDate, 'dd/MM HH:mm')}"></small>
+                                            <small
+                                                th:text="${#temporals.format(request.requestDate, 'dd/MM HH:mm')}"></small>
                                         </td>
                                         <td>
                                             <span th:switch="${request.status.name()}" class="badge">
@@ -362,18 +380,22 @@
                                         </td>
                                         <td>
                                             <div class="btn-group btn-group-sm" role="group">
-                                                <a th:href="@{/organizer/requests/{id}(id=${request.id})}" 
-                                                   class="btn btn-outline-primary" title="Ver detalles">
+                                                <a th:href="@{/organizer/requests/{id}(id=${request.id})}"
+                                                    class="btn btn-outline-primary" title="Ver detalles">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
-                                                
+
+                                                <!-- CAMBIO PRINCIPAL: Usar data attributes en lugar de onclick -->
                                                 <div th:if="${request.status.name() == 'PENDING'}">
-                                                    <button type="button" class="btn btn-outline-success" title="Aprobar"
-                                                            onclick="showApproveModal([[${request.id}]], '[[${request.fullName}]]', [[${request.quantity}]])">
+                                                    <button type="button" class="btn btn-outline-success approve-btn"
+                                                        title="Aprobar" th:data-request-id="${request.id}"
+                                                        th:data-user-name="${request.fullName}"
+                                                        th:data-quantity="${request.quantity}">
                                                         <i class="fas fa-check"></i>
                                                     </button>
-                                                    <button type="button" class="btn btn-outline-danger" title="Rechazar"
-                                                            onclick="showRejectModal([[${request.id}]], '[[${request.fullName}]]')">
+                                                    <button type="button" class="btn btn-outline-danger reject-btn"
+                                                        title="Rechazar" th:data-request-id="${request.id}"
+                                                        th:data-user-name="${request.fullName}">
                                                         <i class="fas fa-times"></i>
                                                     </button>
                                                 </div>
@@ -417,17 +439,19 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <form id="approveForm" method="post">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                     <div class="modal-body">
                         <div class="alert alert-success">
                             <i class="fas fa-info-circle me-2"></i>
                             <strong>¿Aprobar solicitud de <span id="approveUserName"></span>?</strong>
-                            <br>Se aprobarán <span id="approveQuantity"></span> tickets y se enviará un email de confirmación.
+                            <br>Se aprobarán <span id="approveQuantity"></span> tickets y se enviará un email de
+                            confirmación.
                         </div>
-                        
+
                         <div class="mb-3">
                             <label for="approveNotes" class="form-label">Notas para el solicitante</label>
-                            <textarea class="form-control" id="approveNotes" name="notes" rows="3" 
-                                      placeholder="Instrucciones de pago, punto de encuentro, etc..."></textarea>
+                            <textarea class="form-control" id="approveNotes" name="notes" rows="3"
+                                placeholder="Instrucciones de pago, punto de encuentro, etc..."></textarea>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -452,17 +476,18 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <form id="rejectForm" method="post">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                     <div class="modal-body">
                         <div class="alert alert-warning">
                             <i class="fas fa-exclamation-triangle me-2"></i>
                             <strong>¿Rechazar solicitud de <span id="rejectUserName"></span>?</strong>
                             <br>Se enviará un email informando sobre el rechazo.
                         </div>
-                        
+
                         <div class="mb-3">
                             <label for="rejectNotes" class="form-label">Motivo del rechazo</label>
-                            <textarea class="form-control" id="rejectNotes" name="notes" rows="3" 
-                                      placeholder="Explica brevemente el motivo del rechazo..." required></textarea>
+                            <textarea class="form-control" id="rejectNotes" name="notes" rows="3"
+                                placeholder="Explica brevemente el motivo del rechazo..." required></textarea>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -492,11 +517,11 @@
                         <strong>¿Aprobar todas las solicitudes pendientes?</strong>
                         <br>Esta acción enviará emails de confirmación a todos los solicitantes.
                     </div>
-                    
+
                     <div class="mb-3">
                         <label for="approveAllNotes" class="form-label">Notas generales (opcional)</label>
-                        <textarea class="form-control" id="approveAllNotes" rows="3" 
-                                  placeholder="Mensaje que se incluirá en todos los emails..."></textarea>
+                        <textarea class="form-control" id="approveAllNotes" rows="3"
+                            placeholder="Mensaje que se incluirá en todos los emails..."></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -513,6 +538,39 @@
     <script>
         // Variables globales
         let selectedRequests = new Set();
+
+        document.addEventListener('DOMContentLoaded', function () {
+            // Event listeners para botones de aprobación
+            document.querySelectorAll('.approve-btn').forEach(button => {
+                button.addEventListener('click', function () {
+                    const requestId = this.getAttribute('data-request-id');
+                    const userName = this.getAttribute('data-user-name');
+                    const quantity = this.getAttribute('data-quantity');
+                    showApproveModal(requestId, userName, quantity);
+                });
+            });
+
+            // Event listeners para botones de rechazo
+            document.querySelectorAll('.reject-btn').forEach(button => {
+                button.addEventListener('click', function () {
+                    const requestId = this.getAttribute('data-request-id');
+                    const userName = this.getAttribute('data-user-name');
+                    showRejectModal(requestId, userName);
+                });
+            });
+
+            // Event listeners para checkboxes individuales
+            document.querySelectorAll('.request-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', function () {
+                    if (this.checked) {
+                        selectedRequests.add(this.value);
+                    } else {
+                        selectedRequests.delete(this.value);
+                    }
+                    updateSelectedCount();
+                });
+            });
+        });
 
         // Funciones para los modales
         function showApproveModal(requestId, userName, quantity) {
@@ -533,7 +591,7 @@
         // Función de filtrado
         function filterRequests(status) {
             const rows = document.querySelectorAll('.request-row');
-            
+
             rows.forEach(row => {
                 if (status === 'all' || row.dataset.status === status) {
                     row.style.display = '';
@@ -556,7 +614,7 @@
         function toggleSelectAll() {
             const selectAll = document.getElementById('selectAll');
             const checkboxes = document.querySelectorAll('.request-checkbox:not(:disabled)');
-            
+
             checkboxes.forEach(checkbox => {
                 checkbox.checked = selectAll.checked;
                 if (selectAll.checked) {
@@ -565,7 +623,7 @@
                     selectedRequests.delete(checkbox.value);
                 }
             });
-            
+
             updateSelectedCount();
         }
 
@@ -583,9 +641,9 @@
         }
 
         // Event listeners para checkboxes individuales
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             document.querySelectorAll('.request-checkbox').forEach(checkbox => {
-                checkbox.addEventListener('change', function() {
+                checkbox.addEventListener('change', function () {
                     if (this.checked) {
                         selectedRequests.add(this.value);
                     } else {
@@ -604,7 +662,7 @@
         function confirmApproveAll() {
             const notes = document.getElementById('approveAllNotes').value;
             const pendingCheckboxes = document.querySelectorAll('.request-checkbox:not(:disabled)');
-            
+
             // En una implementación real, harías una llamada AJAX aquí
             // Por ahora, simulamos la aprobación individual
             pendingCheckboxes.forEach(checkbox => {
@@ -612,14 +670,14 @@
                 // Aquí harías la llamada para aprobar cada solicitud
                 console.log('Aprobando solicitud:', requestId, 'con notas:', notes);
             });
-            
+
             bootstrap.Modal.getInstance(document.getElementById('approveAllModal')).hide();
             location.reload(); // Recargar para ver los cambios
         }
 
         function approveSelected() {
             if (selectedRequests.size === 0) return;
-            
+
             if (confirm('¿Aprobar ' + selectedRequests.size + ' solicitudes seleccionadas?')) {
                 // Implementar lógica de aprobación masiva
                 selectedRequests.forEach(requestId => {
@@ -631,7 +689,7 @@
 
         function rejectSelected() {
             if (selectedRequests.size === 0) return;
-            
+
             const reason = prompt('Motivo del rechazo para las solicitudes seleccionadas:');
             if (reason && reason.trim()) {
                 selectedRequests.forEach(requestId => {
@@ -647,4 +705,5 @@
         }
     </script>
 </body>
+
 </html>

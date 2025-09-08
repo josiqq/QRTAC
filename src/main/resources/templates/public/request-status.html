@@ -113,7 +113,7 @@
                                         </tr>
                                         <tr>
                                             <td><strong>Precio:</strong></td>
-                                            <td th:text="'$' + ${#numbers.formatDecimal(request.event.price, 0, 2)} + ' c/u'"></td>
+                                            <td th:text="'Gs. ' + ${#numbers.formatInteger(request.event.price, 3, 'POINT')} + ' c/u'"></td>
                                         </tr>
                                     </table>
                                 </div>

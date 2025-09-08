@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,25 +13,31 @@
             color: white;
             padding: 100px 0;
         }
+
         .feature-card {
             transition: transform 0.3s;
             height: 100%;
         }
+
         .feature-card:hover {
             transform: translateY(-5px);
         }
+
         .icon-large {
             font-size: 4rem;
             color: #667eea;
         }
+
         .event-card {
             transition: transform 0.2s;
         }
+
         .event-card:hover {
             transform: translateY(-2px);
         }
     </style>
 </head>
+
 <body>
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
@@ -70,7 +77,7 @@
                 Solicitá Tickets para Eventos
             </h1>
             <p class="lead mb-5">
-                Encontrá eventos increíbles y solicitá tus tickets de forma fácil y segura. 
+                Encontrá eventos increíbles y solicitá tus tickets de forma fácil y segura.
                 Los organizadores se pondrán en contacto contigo directamente.
             </p>
             <div class="row justify-content-center">
@@ -87,7 +94,7 @@
                     </a>
                 </div>
             </div>
-            
+
             <div class="mt-4">
                 <small class="text-white-50">
                     ¿Sos organizador? <a th:href="@{/register/organizer}" class="text-white">Regístrate acá</a>
@@ -124,8 +131,8 @@
                             </p>
                             <p class="card-text" th:text="${#strings.abbreviate(event.description, 80)}"></p>
                             <div class="d-flex justify-content-between align-items-center">
-                                <span class="h5 text-primary mb-0" 
-                                      th:text="${#numbers.formatDecimal(event.price, 0, 2)}"></span>
+                                <span class="h5 text-primary mb-0"
+                                    th:text="'Gs. ' + ${#numbers.formatInteger(event.price, 3, 'POINT')}"></span>
                                 <a th:href="@{/events/{id}(id=${event.id})}" class="btn btn-primary">
                                     <i class="fas fa-paper-plane me-1"></i>Solicitar
                                 </a>
@@ -205,24 +212,24 @@
             </div>
             <div class="row">
                 <div class="col-md-4 mb-4 text-center">
-                    <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
-                         style="width: 60px; height: 60px;">
+                    <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
+                        style="width: 60px; height: 60px;">
                         <i class="fas fa-shield-alt"></i>
                     </div>
                     <h5>Proceso Seguro</h5>
                     <p class="text-muted">Contacto directo con organizadores verificados, sin intermediarios</p>
                 </div>
                 <div class="col-md-4 mb-4 text-center">
-                    <div class="bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
-                         style="width: 60px; height: 60px;">
+                    <div class="bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
+                        style="width: 60px; height: 60px;">
                         <i class="fas fa-comments"></i>
                     </div>
                     <h5>Comunicación Directa</h5>
                     <p class="text-muted">Hablá directamente con el organizador para resolver dudas y coordinar</p>
                 </div>
                 <div class="col-md-4 mb-4 text-center">
-                    <div class="bg-info text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
-                         style="width: 60px; height: 60px;">
+                    <div class="bg-info text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
+                        style="width: 60px; height: 60px;">
                         <i class="fas fa-mobile-alt"></i>
                     </div>
                     <h5>Método Flexible</h5>
@@ -277,14 +284,17 @@
             <div class="row">
                 <div class="col-md-6">
                     <h5><i class="fas fa-qrcode me-2"></i>QRTAC</h5>
-                    <p class="text-muted">Sistema de solicitudes de tickets para eventos. Conectamos organizadores con asistentes de manera directa y segura.</p>
+                    <p class="text-muted">Sistema de solicitudes de tickets para eventos. Conectamos organizadores con
+                        asistentes de manera directa y segura.</p>
                 </div>
                 <div class="col-md-3">
                     <h6>Enlaces Útiles</h6>
                     <ul class="list-unstyled">
                         <li><a th:href="@{/events}" class="text-muted text-decoration-none">Ver Eventos</a></li>
-                        <li><a th:href="@{/requests/status}" class="text-muted text-decoration-none">Consultar Solicitud</a></li>
-                        <li><a th:href="@{/register/organizer}" class="text-muted text-decoration-none">Ser Organizador</a></li>
+                        <li><a th:href="@{/requests/status}" class="text-muted text-decoration-none">Consultar
+                                Solicitud</a></li>
+                        <li><a th:href="@{/register/organizer}" class="text-muted text-decoration-none">Ser
+                                Organizador</a></li>
                     </ul>
                 </div>
                 <div class="col-md-3">
@@ -298,11 +308,13 @@
             </div>
             <hr class="my-4">
             <div class="text-center">
-                <p class="mb-0">&copy; 2025 QRTAC - Sistema de Solicitudes de Tickets. Todos los derechos reservados.</p>
+                <p class="mb-0">&copy; 2025 QRTAC - Sistema de Solicitudes de Tickets. Todos los derechos reservados.
+                </p>
             </div>
         </div>
     </footer>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>

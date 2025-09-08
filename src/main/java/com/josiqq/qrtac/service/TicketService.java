@@ -24,7 +24,13 @@ import javax.crypto.SecretKey;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.List;
+
+import com.itextpdf.text.*;
+import com.itextpdf.text.pdf.*;
+import com.itextpdf.text.Image;
 
 @Service
 @Transactional
@@ -44,6 +50,9 @@ public class TicketService {
 
     @Value("${app.jwt.secret:mySecretKey123456789012345678901234567890}")
     private String jwtSecret;
+
+    @Value("${app.base-url:http://localhost:8080}")
+    private String baseUrl;
 
     private SecretKey getSigningKey() {
         return Keys.hmacShaKeyFor(jwtSecret.getBytes());
@@ -122,7 +131,7 @@ public class TicketService {
         hints.put(EncodeHintType.MARGIN, 1);
 
         // El contenido del QR será una URL que apunte al endpoint de validación
-        String qrContent = "https://yourapp.com/validate/" + qrToken;
+        String qrContent = baseUrl + "/validate/" + qrToken;
 
         BitMatrix bitMatrix = qrCodeWriter.encode(qrContent, BarcodeFormat.QR_CODE, width, height, hints);
 
@@ -189,30 +198,155 @@ public class TicketService {
     }
 
     /**
-     * Genera un PDF con todos los tickets de una solicitud
+     * Genera PDFs individuales para cada ticket
+     */
+    public Map<String, byte[]> generateIndividualTicketPDFs(List<Ticket> tickets) {
+        Map<String, byte[]> ticketPdfs = new HashMap<>();
+
+        for (Ticket ticket : tickets) {
+            try {
+                byte[] pdfBytes = generateSingleTicketPDF(ticket);
+                ticketPdfs.put(ticket.getTicketCode(), pdfBytes);
+            } catch (Exception e) {
+                System.err.println("Error generando PDF para ticket " + ticket.getTicketCode() + ": " + e.getMessage());
+                // Continúa con los demás tickets aunque uno falle
+            }
+        }
+
+        return ticketPdfs;
+    }
+
+    /**
+     * Genera un PDF individual para un ticket específico
+     */
+    public byte[] generateSingleTicketPDF(Ticket ticket) throws DocumentException, IOException, WriterException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        Document document = new Document(PageSize.A4);
+        PdfWriter writer = PdfWriter.getInstance(document, baos);
+
+        document.open();
+
+        // Configurar fuentes
+        Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 20, BaseColor.BLACK);
+        Font headerFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 14, BaseColor.BLACK);
+        Font normalFont = FontFactory.getFont(FontFactory.HELVETICA, 12, BaseColor.BLACK);
+        Font smallFont = FontFactory.getFont(FontFactory.HELVETICA, 10, BaseColor.GRAY);
+
+        // Título principal
+        Paragraph title = new Paragraph("TICKET DE EVENTO", titleFont);
+        title.setAlignment(Element.ALIGN_CENTER);
+        title.setSpacingAfter(20f);
+        document.add(title);
+
+        // Información del evento
+        document.add(new Paragraph("INFORMACIÓN DEL EVENTO", headerFont));
+        document.add(new Paragraph("Evento: " + ticket.getEvent().getName(), normalFont));
+        document.add(new Paragraph("Fecha: " + ticket.getEvent().getEventDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")), normalFont));
+        document.add(new Paragraph("Lugar: " + ticket.getEvent().getVenue(), normalFont));
+        document.add(new Paragraph(" ", normalFont)); // Espacio
+
+        // Información del ticket
+        document.add(new Paragraph("INFORMACIÓN DEL TICKET", headerFont));
+        document.add(new Paragraph("Código: " + ticket.getTicketCode(), normalFont));
+        document.add(new Paragraph("Cliente: " + ticket.getClient().getFullName(), normalFont));
+        document.add(new Paragraph("Email: " + ticket.getClient().getEmail(), normalFont));
+        if (ticket.getClient().getPhone() != null) {
+            document.add(new Paragraph("Teléfono: " + ticket.getClient().getPhone(), normalFont));
+        }
+        document.add(new Paragraph("Precio: Gs. " + ticket.getPrice(), normalFont));
+        document.add(new Paragraph("Fecha de compra: " + ticket.getPurchaseDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")), normalFont));
+        document.add(new Paragraph(" ", normalFont)); // Espacio
+
+        // Generar QR Code
+        byte[] qrImageBytes = generateQrCode(ticket.getQrToken(), 200, 200);
+        Image qrImage = Image.getInstance(qrImageBytes);
+        qrImage.setAlignment(Element.ALIGN_CENTER);
+        qrImage.scaleToFit(150, 150);
+
+        // Agregar QR al documento
+        document.add(new Paragraph("CÓDIGO QR PARA VALIDACIÓN", headerFont));
+        document.add(new Paragraph(" ", normalFont)); // Espacio
+        document.add(qrImage);
+        document.add(new Paragraph(" ", normalFont)); // Espacio
+
+        // Instrucciones
+        document.add(new Paragraph("INSTRUCCIONES IMPORTANTES", headerFont));
+        document.add(new Paragraph("• Presenta este ticket (impreso o digital) en la entrada del evento", normalFont));
+        document.add(new Paragraph("• El código QR será escaneado para validar tu entrada", normalFont));
+        document.add(new Paragraph("• Este ticket es único e intransferible", normalFont));
+        document.add(new Paragraph("• Conserva este documento hasta después del evento", normalFont));
+        document.add(new Paragraph(" ", normalFont)); // Espacio
+
+        // Información de contacto del organizador
+        document.add(new Paragraph("CONTACTO DEL ORGANIZADOR", headerFont));
+        document.add(new Paragraph("Organizador: " + ticket.getEvent().getOrganizer().getFullName(), normalFont));
+        document.add(new Paragraph("Email: " + ticket.getEvent().getOrganizer().getEmail(), normalFont));
+        if (ticket.getEvent().getOrganizer().getPhone() != null) {
+            document.add(new Paragraph("Teléfono: " + ticket.getEvent().getOrganizer().getPhone(), normalFont));
+        }
+        document.add(new Paragraph(" ", normalFont)); // Espacio
+
+        // Footer con información adicional
+        document.add(new Paragraph("Generado el: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")), smallFont));
+        document.add(new Paragraph("Sistema QRTAC - Gestión de Tickets con QR", smallFont));
+
+        document.close();
+        return baos.toByteArray();
+    }
+
+    /**
+     * Genera un PDF con todos los tickets de una solicitud (método original mantenido para compatibilidad)
      */
     public byte[] generateTicketsPDF(List<Ticket> tickets) {
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            // Aquí usarías una librería como iText para generar PDF
-            // Por simplicidad, retorno un placeholder
+            Document document = new Document(PageSize.A4);
+            PdfWriter.getInstance(document, baos);
 
-            StringBuilder content = new StringBuilder();
-            content.append("TICKETS - EVENTO: ").append(tickets.get(0).getEvent().getName()).append("\n\n");
+            document.open();
+
+            // Configurar fuentes
+            Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 18, BaseColor.BLACK);
+            Font headerFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12, BaseColor.BLACK);
+            Font normalFont = FontFactory.getFont(FontFactory.HELVETICA, 10, BaseColor.BLACK);
+
+            // Título principal
+            Paragraph title = new Paragraph("TICKETS - EVENTO: " + tickets.get(0).getEvent().getName(), titleFont);
+            title.setAlignment(Element.ALIGN_CENTER);
+            title.setSpacingAfter(20f);
+            document.add(title);
 
             for (int i = 0; i < tickets.size(); i++) {
                 Ticket ticket = tickets.get(i);
-                content.append("TICKET ").append(i + 1).append("\n");
-                content.append("Código: ").append(ticket.getTicketCode()).append("\n");
-                content.append("Cliente: ").append(ticket.getClient().getFullName()).append("\n");
-                content.append("Evento: ").append(ticket.getEvent().getName()).append("\n");
-                content.append("Fecha: ").append(ticket.getEvent().getEventDate()).append("\n");
-                content.append("Lugar: ").append(ticket.getEvent().getVenue()).append("\n");
-                content.append("Precio: Gs. ").append(ticket.getPrice()).append("\n");
-                content.append("QR Token: ").append(ticket.getQrToken()).append("\n\n");
+
+                // Si no es el primer ticket, agregar una nueva página
+                if (i > 0) {
+                    document.newPage();
+                }
+
+                document.add(new Paragraph("TICKET " + (i + 1), headerFont));
+                document.add(new Paragraph("Código: " + ticket.getTicketCode(), normalFont));
+                document.add(new Paragraph("Cliente: " + ticket.getClient().getFullName(), normalFont));
+                document.add(new Paragraph("Evento: " + ticket.getEvent().getName(), normalFont));
+                document.add(new Paragraph("Fecha: " + ticket.getEvent().getEventDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")), normalFont));
+                document.add(new Paragraph("Lugar: " + ticket.getEvent().getVenue(), normalFont));
+                document.add(new Paragraph("Precio: Gs. " + ticket.getPrice(), normalFont));
+                document.add(new Paragraph(" ", normalFont));
+
+                // Agregar QR Code
+                try {
+                    byte[] qrImageBytes = generateQrCode(ticket.getQrToken(), 150, 150);
+                    Image qrImage = Image.getInstance(qrImageBytes);
+                    qrImage.setAlignment(Element.ALIGN_CENTER);
+                    document.add(qrImage);
+                } catch (Exception e) {
+                    document.add(new Paragraph("Error generando QR: " + ticket.getQrToken(), normalFont));
+                }
+
+                document.add(new Paragraph(" ", normalFont));
             }
 
-            baos.write(content.toString().getBytes());
+            document.close();
             return baos.toByteArray();
 
         } catch (Exception e) {
@@ -221,7 +355,7 @@ public class TicketService {
     }
 
     /**
-     * Genera imágenes QR individuales para cada ticket
+     * Genera imágenes QR individuales para cada ticket (método original mantenido)
      */
     public Map<String, byte[]> generateQRImagesForTickets(List<Ticket> tickets) {
         Map<String, byte[]> qrImages = new HashMap<>();

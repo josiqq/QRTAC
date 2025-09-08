@@ -89,7 +89,6 @@ public class TicketRequestService {
 
         TicketRequest request = requestOpt.get();
 
-        // Validaciones existentes...
         if (!request.getEvent().getOrganizer().getId().equals(organizer.getId())) {
             throw new RuntimeException("No tienes permisos para procesar esta solicitud");
         }
@@ -113,13 +112,25 @@ public class TicketRequestService {
             // 🎫 GENERAR TICKETS AUTOMÁTICAMENTE
             List<Ticket> generatedTickets = ticketService.generateTicketsFromRequest(savedRequest);
 
-            // Enviar email de aprobación con información de tickets
-            emailService.sendRequestApprovalWithTickets(savedRequest, generatedTickets);
+            // 📧 Enviar email de aprobación con PDFs individuales
+            emailService.sendRequestApprovalWithTicketsSimulation(savedRequest, generatedTickets);
+
+            System.out.println("✅ Solicitud aprobada exitosamente:");
+            System.out.println("   - Tickets generados: " + generatedTickets.size());
+            System.out.println("   - Email enviado a: " + savedRequest.getEmail());
+            System.out.println("   - PDFs individuales generados para cada ticket");
 
         } catch (Exception e) {
-            System.err.println("Error generando tickets: " + e.getMessage());
-            // Enviar email normal sin tickets
-            emailService.sendRequestApproval(savedRequest);
+            System.err.println("❌ Error generando tickets o enviando email: " + e.getMessage());
+            e.printStackTrace();
+            
+            // Enviar email normal sin tickets como fallback
+            try {
+                emailService.sendRequestApproval(savedRequest);
+                System.out.println("📧 Email de fallback enviado sin tickets");
+            } catch (Exception fallbackError) {
+                System.err.println("❌ Error enviando email de fallback: " + fallbackError.getMessage());
+            }
         }
 
         return savedRequest;
