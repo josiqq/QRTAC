@@ -61,7 +61,7 @@ public class SecurityConfig {
     public AuthenticationSuccessHandler customAuthenticationSuccessHandler() {
         return (request, response, authentication) -> {
             String role = authentication.getAuthorities().iterator().next().getAuthority();
-            
+
             if ("ROLE_ORGANIZER".equals(role)) {
                 response.sendRedirect("/organizer/dashboard");
             } else {

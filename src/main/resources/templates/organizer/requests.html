@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,32 +12,40 @@
             font-size: 0.75rem;
             padding: 0.25rem 0.5rem;
         }
+
         .request-card {
             transition: all 0.2s ease;
             border-left: 4px solid transparent;
         }
+
         .request-card:hover {
             shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
             transform: translateY(-2px);
         }
+
         .request-card.pending {
             border-left-color: #ffc107;
         }
+
         .request-card.approved {
             border-left-color: #198754;
         }
+
         .request-card.rejected {
             border-left-color: #dc3545;
         }
+
         .request-card.cancelled {
             border-left-color: #6c757d;
         }
+
         .quick-actions {
             position: sticky;
             top: 20px;
         }
     </style>
 </head>
+
 <body>
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
@@ -65,7 +74,7 @@
             <span th:text="${success}"></span>
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
-        
+
         <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
             <i class="fas fa-exclamation-circle me-2"></i>
             <span th:text="${error}"></span>
@@ -160,16 +169,16 @@
 
                         <!-- Lista de solicitudes -->
                         <div th:unless="${#lists.isEmpty(allRequests)}" id="requestsList">
-                            <div th:each="request : ${allRequests}" 
-                                 class="request-card card mb-3" 
-                                 th:classappend="${request.status.name().toLowerCase()}"
-                                 th:data-status="${request.status.name().toLowerCase()}">
+                            <div th:each="request : ${allRequests}" class="request-card card mb-3"
+                                th:classappend="${request.status.name().toLowerCase()}"
+                                th:data-status="${request.status.name().toLowerCase()}">
                                 <div class="card-body">
                                     <div class="row align-items-center">
                                         <!-- Información del solicitante -->
                                         <div class="col-md-4">
                                             <div class="d-flex align-items-center">
-                                                <div class="avatar-placeholder bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                                <div class="avatar-placeholder bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3"
+                                                    style="width: 40px; height: 40px;">
                                                     <i class="fas fa-user"></i>
                                                 </div>
                                                 <div>
@@ -191,7 +200,8 @@
                                                 <br>
                                                 <small class="text-muted">
                                                     <i class="fas fa-clock me-1"></i>
-                                                    <span th:text="${#temporals.format(request.requestDate, 'dd/MM/yyyy HH:mm')}"></span>
+                                                    <span
+                                                        th:text="${#temporals.format(request.requestDate, 'dd/MM/yyyy HH:mm')}"></span>
                                                 </small>
                                             </div>
                                         </div>
@@ -218,19 +228,23 @@
 
                                             <!-- Botones de acción -->
                                             <div class="btn-group btn-group-sm" role="group">
-                                                <a th:href="@{/organizer/requests/{id}(id=${request.id})}" 
-                                                   class="btn btn-outline-primary">
+                                                <a th:href="@{/organizer/requests/{id}(id=${request.id})}"
+                                                    class="btn btn-outline-primary">
                                                     <i class="fas fa-eye me-1"></i>Ver
                                                 </a>
 
                                                 <!-- Botones de aprobación/rechazo solo para pendientes -->
                                                 <div th:if="${request.status.name() == 'PENDING'}">
-                                                    <button type="button" class="btn btn-outline-success"
-                                                            onclick="showApproveModal([[${request.id}]], '[[${request.fullName}]]', [[${request.quantity}]])">
+                                                    <button type="button" class="btn btn-outline-success approve-btn"
+                                                        th:data-request-id="${request.id}"
+                                                        th:data-user-name="${request.fullName}"
+                                                        th:data-quantity="${request.quantity}">
                                                         <i class="fas fa-check me-1"></i>Aprobar
                                                     </button>
-                                                    <button type="button" class="btn btn-outline-danger"
-                                                            onclick="showRejectModal([[${request.id}]], '[[${request.fullName}]]')">
+
+                                                    <button type="button" class="btn btn-outline-danger reject-btn"
+                                                        th:data-request-id="${request.id}"
+                                                        th:data-user-name="${request.fullName}">
                                                         <i class="fas fa-times me-1"></i>Rechazar
                                                     </button>
                                                 </div>
@@ -239,7 +253,8 @@
                                             <!-- Información adicional para procesadas -->
                                             <div th:if="${request.processedDate != null}" class="mt-2">
                                                 <small class="text-muted">
-                                                    Procesada el <span th:text="${#temporals.format(request.processedDate, 'dd/MM/yyyy HH:mm')}"></span>
+                                                    Procesada el <span
+                                                        th:text="${#temporals.format(request.processedDate, 'dd/MM/yyyy HH:mm')}"></span>
                                                     <br>por <span th:text="${request.processedBy?.fullName}"></span>
                                                 </small>
                                             </div>
@@ -247,11 +262,12 @@
                                     </div>
 
                                     <!-- Mensaje del solicitante -->
-                                    <div th:if="${request.message != null and !#strings.isEmpty(request.message)}" class="row mt-3">
+                                    <div th:if="${request.message != null and !#strings.isEmpty(request.message)}"
+                                        class="row mt-3">
                                         <div class="col-12">
                                             <div class="alert alert-light mb-0">
                                                 <small>
-                                                    <strong>Mensaje:</strong> 
+                                                    <strong>Mensaje:</strong>
                                                     <span th:text="${request.message}"></span>
                                                 </small>
                                             </div>
@@ -259,11 +275,12 @@
                                     </div>
 
                                     <!-- Notas del organizador -->
-                                    <div th:if="${request.organizerNotes != null and !#strings.isEmpty(request.organizerNotes)}" class="row mt-2">
+                                    <div th:if="${request.organizerNotes != null and !#strings.isEmpty(request.organizerNotes)}"
+                                        class="row mt-2">
                                         <div class="col-12">
                                             <div class="alert alert-info mb-0">
                                                 <small>
-                                                    <strong>Notas del organizador:</strong> 
+                                                    <strong>Notas del organizador:</strong>
                                                     <span th:text="${request.organizerNotes}"></span>
                                                 </small>
                                             </div>
@@ -288,18 +305,20 @@
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <form id="approveForm" method="post">
+                <form id="approveForm" th:action="@{/organizer/requests/0/approve}" method="post">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                     <div class="modal-body">
                         <div class="alert alert-success">
                             <i class="fas fa-info-circle me-2"></i>
                             <strong>¿Aprobar solicitud de <span id="approveUserName"></span>?</strong>
-                            <br>Se aprobarán <span id="approveQuantity"></span> tickets y se enviará un email de confirmación.
+                            <br>Se aprobarán <span id="approveQuantity"></span> tickets y se enviará un email de
+                            confirmación.
                         </div>
-                        
+
                         <div class="mb-3">
                             <label for="approveNotes" class="form-label">Notas para el solicitante (opcional)</label>
-                            <textarea class="form-control" id="approveNotes" name="notes" rows="3" 
-                                      placeholder="Instrucciones de pago, punto de encuentro, etc..."></textarea>
+                            <textarea class="form-control" id="approveNotes" name="notes" rows="3"
+                                placeholder="Instrucciones de pago, punto de encuentro, etc..."></textarea>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -323,18 +342,19 @@
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <form id="rejectForm" method="post">
+                <form id="rejectForm" th:action="@{/organizer/requests/0/reject}" method="post">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                     <div class="modal-body">
                         <div class="alert alert-warning">
                             <i class="fas fa-exclamation-triangle me-2"></i>
                             <strong>¿Rechazar solicitud de <span id="rejectUserName"></span>?</strong>
                             <br>Se enviará un email informando sobre el rechazo.
                         </div>
-                        
+
                         <div class="mb-3">
                             <label for="rejectNotes" class="form-label">Motivo del rechazo</label>
-                            <textarea class="form-control" id="rejectNotes" name="notes" rows="3" 
-                                      placeholder="Explica brevemente el motivo del rechazo..." required></textarea>
+                            <textarea class="form-control" id="rejectNotes" name="notes" rows="3"
+                                placeholder="Explica brevemente el motivo del rechazo..." required></textarea>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -350,18 +370,48 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Event listeners para los botones
+        document.addEventListener('DOMContentLoaded', function () {
+            // Botones de aprobación
+            document.querySelectorAll('.approve-btn').forEach(button => {
+                button.addEventListener('click', function () {
+                    const requestId = this.getAttribute('data-request-id');
+                    const userName = this.getAttribute('data-user-name');
+                    const quantity = this.getAttribute('data-quantity');
+                    showApproveModal(requestId, userName, quantity);
+                });
+            });
+
+            // Botones de rechazo
+            document.querySelectorAll('.reject-btn').forEach(button => {
+                button.addEventListener('click', function () {
+                    const requestId = this.getAttribute('data-request-id');
+                    const userName = this.getAttribute('data-user-name');
+                    showRejectModal(requestId, userName);
+                });
+            });
+        });
+
         // Funciones para los modales
         function showApproveModal(requestId, userName, quantity) {
             document.getElementById('approveUserName').textContent = userName;
             document.getElementById('approveQuantity').textContent = quantity;
-            document.getElementById('approveForm').action = '/organizer/requests/' + requestId + '/approve';
+
+            // CLAVE: Actualizar la action del form con el ID correcto
+            const form = document.getElementById('approveForm');
+            form.action = '/organizer/requests/' + requestId + '/approve';
+
             document.getElementById('approveNotes').value = '';
             new bootstrap.Modal(document.getElementById('approveModal')).show();
         }
 
         function showRejectModal(requestId, userName) {
             document.getElementById('rejectUserName').textContent = userName;
-            document.getElementById('rejectForm').action = '/organizer/requests/' + requestId + '/reject';
+
+            // CLAVE: Actualizar la action del form con el ID correcto
+            const form = document.getElementById('rejectForm');
+            form.action = '/organizer/requests/' + requestId + '/reject';
+
             document.getElementById('rejectNotes').value = '';
             new bootstrap.Modal(document.getElementById('rejectModal')).show();
         }
@@ -369,7 +419,7 @@
         // Función de filtrado
         function filterRequests(status) {
             const cards = document.querySelectorAll('.request-card');
-            
+
             cards.forEach(card => {
                 if (status === 'all' || card.dataset.status === status) {
                     card.style.display = 'block';
@@ -395,4 +445,5 @@
         }, 30000);
     </script>
 </body>
+
 </html>
