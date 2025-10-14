@@ -1,20 +1,29 @@
-# Etapa de construcción (opcional, si quieres compilar dentro del contenedor)
-FROM maven:3.9.4-eclipse-temurin-17 AS build
+# Stage 1: Build the application
+FROM eclipse-temurin:17-jdk AS builder
+
+# Set the working directory
 WORKDIR /app
+
+# Copy the application code
 COPY . .
-RUN mvn clean package -DskipTests
 
-# Etapa de ejecución
-FROM eclipse-temurin:17-jdk-alpine
+# Give execution permission to mvnw
+RUN chmod +x mvnw
 
-# Directorio de trabajo dentro del contenedor
+# Build the application (requires Maven or Gradle)
+RUN ./mvnw clean package -DskipTests
+
+# Stage 2: Run the application
+FROM eclipse-temurin:17-jre
+
+# Set the working directory
 WORKDIR /app
 
-# Copia el archivo JAR compilado (ajusta el nombre del archivo)
-COPY target/qrtac-0.0.1-SNAPSHOT.jar app.jar
+# Copy the JAR file from the builder stage
+COPY --from=builder /app/target/*.jar app.jar
 
-# Expone el puerto que tu aplicación usa
+# Expose the port the app will run on
 EXPOSE 8080
 
-# Comando para ejecutar la aplicación
+# Command to run the application
 ENTRYPOINT ["java", "-jar", "app.jar"]
