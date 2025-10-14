@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
+
 <body>
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
@@ -121,13 +123,13 @@
                                     <h6 class="mb-1" th:text="${request.fullName}"></h6>
                                     <p class="mb-1 text-muted" th:text="${request.event.name}"></p>
                                     <small class="text-muted">
-                                        <span th:text="${request.quantity} + ' tickets'"></span> • 
+                                        <span th:text="${request.quantity} + ' tickets'"></span> •
                                         <span th:text="${#temporals.format(request.requestDate, 'dd/MM HH:mm')}"></span>
                                     </small>
                                 </div>
                                 <div>
-                                    <a th:href="@{/organizer/requests/{id}(id=${request.id})}" 
-                                       class="btn btn-outline-primary btn-sm">
+                                    <a th:href="@{/organizer/requests/{id}(id=${request.id})}"
+                                        class="btn btn-outline-primary btn-sm">
                                         Ver
                                     </a>
                                 </div>
@@ -152,12 +154,12 @@
                             </a>
                             <a th:href="@{/organizer/requests}" class="btn btn-outline-warning">
                                 <i class="fas fa-clock me-2"></i>
-                                Gestionar Solicitudes 
-                                <span th:if="${pendingRequestsCount > 0}" class="badge bg-warning text-dark ms-2" 
-                                      th:text="${pendingRequestsCount}"></span>
+                                Gestionar Solicitudes
+                                <span th:if="${pendingRequestsCount > 0}" class="badge bg-warning text-dark ms-2"
+                                    th:text="${pendingRequestsCount}"></span>
                             </a>
-                            <a th:href="@{/organizer/profile}" class="btn btn-outline-secondary">
-                                <i class="fas fa-user-cog me-2"></i>Configurar Perfil
+                            <a th:href="@{/organizer/scanner}" class="btn btn-outline-secondary">
+                                <i class="fas fa-qrcode me-2"></i>Abrir Scanner
                             </a>
                         </div>
                     </div>
@@ -219,8 +221,7 @@
                                         </td>
                                         <td th:text="${#temporals.format(event.eventDate, 'dd/MM/yyyy HH:mm')}"></td>
                                         <td>
-                                            <span th:switch="${event.status.name()}"
-                                                  class="badge">
+                                            <span th:switch="${event.status.name()}" class="badge">
                                                 <span th:case="'ACTIVE'" class="badge bg-success">Activo</span>
                                                 <span th:case="'CANCELLED'" class="badge bg-danger">Cancelado</span>
                                                 <span th:case="'COMPLETED'" class="badge bg-secondary">Finalizado</span>
@@ -228,27 +229,29 @@
                                         </td>
                                         <td th:text="${event.capacity} + ' personas'"></td>
                                         <td class="text-center">
-                                            <a th:href="@{/organizer/events/{id}/requests(id=${event.id})}" 
-                                               class="text-decoration-none">
+                                            <a th:href="@{/organizer/events/{id}/requests(id=${event.id})}"
+                                                class="text-decoration-none">
                                                 <i class="fas fa-envelope me-1"></i>
-                                                <span th:text="${@ticketRequestService.getPendingTicketsCount(event)} + '/' + ${@ticketRequestService.getApprovedTicketsCount(event)}"></span>
+                                                <span
+                                                    th:text="${@ticketRequestService.getPendingTicketsCount(event)} + '/' + ${@ticketRequestService.getApprovedTicketsCount(event)}"></span>
                                             </a>
                                         </td>
                                         <td>
                                             <div class="btn-group btn-group-sm" role="group">
-                                                <a th:href="@{/organizer/events/{id}/edit(id=${event.id})}" 
-                                                   class="btn btn-outline-primary">
+                                                <a th:href="@{/organizer/events/{id}/edit(id=${event.id})}"
+                                                    class="btn btn-outline-primary">
                                                     <i class="fas fa-edit"></i>
                                                 </a>
-                                                <a th:href="@{/organizer/events/{id}/requests(id=${event.id})}" 
-                                                   class="btn btn-outline-info">
+                                                <a th:href="@{/organizer/events/{id}/requests(id=${event.id})}"
+                                                    class="btn btn-outline-info">
                                                     <i class="fas fa-list"></i>
                                                 </a>
-                                                <button th:if="${event.status.name() == 'ACTIVE'}"
-                                                        type="button" class="btn btn-outline-danger"
-                                                        onclick="confirmCancel([[${event.id}]], '[[${event.name}]]')">
+                                                <button th:if="${event.status.name == 'ACTIVE'}" type="button"
+                                                    class="btn btn-outline-danger"
+                                                    th:attr="onclick=|confirmCancel(${event.id}, '${event.name}')|">
                                                     <i class="fas fa-ban"></i>
                                                 </button>
+
                                             </div>
                                         </td>
                                     </tr>
@@ -295,4 +298,5 @@
         }
     </script>
 </body>
+
 </html>

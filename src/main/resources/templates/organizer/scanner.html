@@ -4,6 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
     <title>Escáner QR - QRTAC</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -36,24 +38,32 @@
             margin: 0 auto;
         }
 
-        .scan-line {
-            animation: scan 2s linear infinite;
-        }
-
-        @keyframes scan {
-            0% {
-                transform: translateY(-100%);
-            }
-
-            100% {
-                transform: translateY(400px);
-            }
-        }
-
         .camera-permission {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border-radius: 15px;
+        }
+
+        .history-item {
+            transition: all 0.3s ease;
+        }
+
+        .history-item:hover {
+            background-color: #f8f9fa;
+            transform: translateX(5px);
+        }
+
+        .pulse {
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
         }
     </style>
 </head>
@@ -71,7 +81,8 @@
                 </a>
                 <span class="navbar-text me-3">
                     <i class="fas fa-user-tie me-1"></i>
-                    <span sec:authentication="principal.fullName"></span>
+                    <span sec:authentication="principal.fullName" id="organizer-name">Organizador</span>
+                    <span sec:authentication="principal.id" id="organizer-id" style="display:none;"></span>
                 </span>
                 <a class="nav-link" th:href="@{/logout}">
                     <i class="fas fa-sign-out-alt"></i> Salir
@@ -119,23 +130,21 @@
                                 <button id="stop-scanner" class="btn btn-danger">
                                     <i class="fas fa-stop me-2"></i>Detener Escáner
                                 </button>
-                                <button id="switch-camera" class="btn btn-secondary ms-2" style="display: none;">
-                                    <i class="fas fa-sync-alt me-2"></i>Cambiar Cámara
-                                </button>
                             </div>
                         </div>
 
                         <!-- Entrada manual de código -->
                         <hr class="my-4">
                         <div class="text-center">
-                            <h6>O ingresa el código manualmente:</h6>
+                            <h6>O ingresa la URL/token del QR manualmente:</h6>
                             <div class="input-group">
                                 <input type="text" id="manual-code" class="form-control"
-                                    placeholder="Pega aquí el código del ticket">
+                                    placeholder="Pega aquí la URL o token del QR">
                                 <button id="validate-manual" class="btn btn-outline-primary">
                                     <i class="fas fa-check me-1"></i>Validar
                                 </button>
                             </div>
+                            <!-- <small class="text-muted">Ejemplo: https://qrtac.store/validate/token... o solo el token</small> -->
                         </div>
                     </div>
                 </div>
@@ -151,9 +160,9 @@
                     </div>
                     <div class="card-body scanner-result d-flex align-items-center justify-content-center">
                         <div id="waiting-scan" class="text-center text-muted">
-                            <i class="fas fa-qrcode fa-4x mb-3 opacity-50"></i>
+                            <i class="fas fa-qrcode fa-4x mb-3 opacity-50 pulse"></i>
                             <h5>Esperando escaneo...</h5>
-                            <p>Escanea un código QR o ingresa el código manualmente</p>
+                            <p>Escanea un código QR o ingresa el token manualmente</p>
                         </div>
 
                         <div id="scan-result" style="display: none;">
@@ -162,14 +171,42 @@
                     </div>
                 </div>
 
-                <!-- Historial de validaciones -->
+                <!-- Estadísticas de sesión -->
                 <div class="card mt-4">
                     <div class="card-header">
                         <h6 class="mb-0">
-                            <i class="fas fa-history me-2"></i>Últimas Validaciones
+                            <i class="fas fa-chart-bar me-2"></i>Estadísticas de Sesión
                         </h6>
                     </div>
                     <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-4">
+                                <h3 class="text-success" id="success-count">0</h3>
+                                <small class="text-muted">Válidos</small>
+                            </div>
+                            <div class="col-4">
+                                <h3 class="text-danger" id="error-count">0</h3>
+                                <small class="text-muted">Inválidos</small>
+                            </div>
+                            <div class="col-4">
+                                <h3 class="text-primary" id="total-count">0</h3>
+                                <small class="text-muted">Total</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Historial de validaciones -->
+                <div class="card mt-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">
+                            <i class="fas fa-history me-2"></i>Últimas Validaciones
+                        </h6>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="clearHistory()">
+                            <i class="fas fa-trash me-1"></i>Limpiar
+                        </button>
+                    </div>
+                    <div class="card-body" style="max-height: 300px; overflow-y: auto;">
                         <div id="validation-history">
                             <p class="text-muted text-center">No hay validaciones recientes</p>
                         </div>
@@ -181,120 +218,182 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Variables globales
+        let validationHistory = [];
+        let html5QrCode = null;
+        let statsCounters = {
+            success: 0,
+            error: 0,
+            total: 0
+        };
 
         document.addEventListener('DOMContentLoaded', function () {
             
             // Referencias a los elementos del DOM
             const startButton = document.getElementById('start-scanner');
             const stopButton = document.getElementById('stop-scanner');
-            const switchCameraButton = document.getElementById('switch-camera');
             const readerDiv = document.getElementById('reader');
             const permissionDiv = document.getElementById('camera-permission');
             const controlsDiv = document.getElementById('scanner-controls');
             const manualValidateButton = document.getElementById('validate-manual');
             const manualCodeInput = document.getElementById('manual-code');
 
-            let html5QrCode = null; // Variable para mantener la instancia del escáner
-            let currentCameraId = null;
+            // Obtener ID del organizador del DOM (inyectado por Thymeleaf)
+            const organizerIdElement = document.getElementById('organizer-id');
+            const organizerId = organizerIdElement ? organizerIdElement.textContent.trim() : null;
+
+            if (!organizerId) {
+                console.error('No se pudo obtener el ID del organizador');
+            }
 
             // Función que se ejecuta cuando el escaneo es exitoso
             const onScanSuccess = (decodedText, decodedResult) => {
-                // Detiene el escáner para evitar múltiples lecturas seguidas
+                console.log('QR escaneado:', decodedText);
+                
+                // Detiene el escáner para evitar múltiples lecturas
                 stopScanner();
                 
-                // Llama a tu lógica de validación
-                validateTicket(decodedText);
+                // Extrae el token del QR y valida
+                const token = extractTokenFromQR(decodedText);
+                if (token) {
+                    validateTicket(token);
+                } else {
+                    showError('No se pudo extraer el token del código QR');
+                }
             };
 
             // Función para iniciar el escáner
             function startScanner() {
-                // Oculta el mensaje de permisos y muestra el visor de la cámara y los controles
                 permissionDiv.style.display = 'none';
                 readerDiv.style.display = 'block';
                 controlsDiv.style.display = 'block';
 
-                // Crea una nueva instancia del escáner
                 html5QrCode = new Html5Qrcode("reader");
 
                 const config = { 
                     fps: 10, 
-                    qrbox: { width: 250, height: 250 },
-                    supportedScanTypes: [
-                        Html5QrcodeScanType.SCAN_TYPE_CAMERA
-                    ]
+                    qrbox: { width: 250, height: 250 }
                 };
 
-                html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess)
-                    .catch(err => {
-                        console.error("No se pudo iniciar el escáner.", err);
-                        showError("Error al iniciar la cámara. Asegúrate de dar los permisos necesarios.");
-                    });
+                html5QrCode.start(
+                    { facingMode: "environment" }, 
+                    config, 
+                    onScanSuccess
+                ).catch(err => {
+                    console.error("Error al iniciar el escáner:", err);
+                    showError("Error al iniciar la cámara. Verifica los permisos.");
+                    permissionDiv.style.display = 'block';
+                    readerDiv.style.display = 'none';
+                    controlsDiv.style.display = 'none';
+                });
             }
 
             function stopScanner() {
                 if (html5QrCode && html5QrCode.isScanning) {
                     html5QrCode.stop().then(() => {
-                        console.log("Escáner detenido.");
+                        console.log("Escáner detenido");
                         permissionDiv.style.display = 'block';
                         readerDiv.style.display = 'none';
                         controlsDiv.style.display = 'none';
                     }).catch(err => {
-                        console.error("Error al detener el escáner.", err);
+                        console.error("Error al detener el escáner:", err);
                     });
                 }
             }
-            
-            // --- SIMULACIÓN DE LA VALIDACIÓN ---
-            // En un caso real, aquí harías una llamada (fetch) a tu servidor
-            function validateTicket(ticketCode) {
-                showLoading(); // Muestra el spinner
 
-                console.log(`Validando código: ${ticketCode}`);
-
-                // Simula una llamada a un servidor con un retraso de 1.5 segundos
-                setTimeout(() => {
-                    if (ticketCode === "TICKET-VALIDO-123") {
-                        const mockSuccessData = {
-                            clientName: "Ana García",
-                            eventName: "Concierto Anual",
-                            ticketCode: ticketCode,
-                            usedAt: new Date().toISOString()
-                        };
-                        showSuccessResult(mockSuccessData);
-                        addToHistory(mockSuccessData, 'success');
-                    } else if (ticketCode === "TICKET-USADO-456") {
-                        const mockUsedData = {
-                            message: "Este ticket ya ha sido utilizado."
-                        };
-                        showErrorResult(mockUsedData);
-                        addToHistory({ clientName: 'Intento Fallido', ...mockUsedData }, 'error');
-                    } else {
-                        const mockErrorData = {
-                            message: "El código del ticket no existe o es inválido."
-                        };
-                        showErrorResult(mockErrorData);
-                        addToHistory({ clientName: `Intento: ${ticketCode}`, ...mockErrorData }, 'error');
-                    }
-                }, 1500);
+            // Extrae el token de la URL del QR
+            function extractTokenFromQR(qrContent) {
+                // Si es una URL completa, extraer el token del final
+                if (qrContent.includes('/validate/')) {
+                    const parts = qrContent.split('/validate/');
+                    return parts[1] || null;
+                }
+                // Si ya es solo el token
+                return qrContent;
             }
 
+            // Función principal de validación (conectada al backend real)
+            function validateTicket(qrToken) {
+                showLoading();
+
+                console.log('Validando token:', qrToken);
+
+                if (!organizerId) {
+                    showError('Error: No se pudo identificar al organizador');
+                    return;
+                }
+
+                // Obtener el token CSRF
+                const csrfToken = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
+                const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content');
+
+                const headers = {
+                    'Content-Type': 'application/json',
+                };
+
+                // Agregar CSRF token si existe
+                if (csrfToken && csrfHeader) {
+                    headers[csrfHeader] = csrfToken;
+                }
+
+                // Llamada real al backend usando la API REST
+                fetch(`/api/tickets/validate/${qrToken}?organizerId=${organizerId}`, {
+                    method: 'POST',
+                    headers: headers
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Respuesta del servidor:', data);
+                    
+                    if (data.status === 'SUCCESS') {
+                        showSuccessResult(data);
+                        addToHistory(data, 'success');
+                        updateStats('success');
+                    } else {
+                        showErrorResult(data);
+                        addToHistory(data, 'error');
+                        updateStats('error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error en la validación:', error);
+                    showError('Error de conexión. Verifica tu conexión a internet.');
+                    updateStats('error');
+                });
+            }
+
+            // Event Listeners
             startButton.addEventListener('click', startScanner);
             stopButton.addEventListener('click', stopScanner);
             
             manualValidateButton.addEventListener('click', () => {
                 const code = manualCodeInput.value.trim();
                 if (code) {
-                    validateTicket(code);
+                    const token = extractTokenFromQR(code);
+                    if (token) {
+                        validateTicket(token);
+                    } else {
+                        showError('El código ingresado no es válido');
+                    }
                 } else {
-                    showError("Por favor, ingresa un código para validar.");
+                    showError('Por favor, ingresa un código para validar');
                 }
+            });
+
+            // Permitir validar con Enter
+            manualCodeInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    manualValidateButton.click();
+                }
+            });
+
+            // Limpiar el input al hacer foco
+            manualCodeInput.addEventListener('focus', () => {
+                manualCodeInput.select();
             });
         });
 
-
-        // Variable global para el historial
-        let validationHistory = [];
-
+        // Funciones de UI
         function showLoading() {
             const resultDiv = document.getElementById('scan-result');
             const waitingDiv = document.getElementById('waiting-scan');
@@ -306,13 +405,15 @@
                     <div class="spinner-border text-primary" role="status">
                         <span class="visually-hidden">Validando...</span>
                     </div>
-                    <p class="mt-3">Validando ticket...</p>
+                    <p class="mt-3">Validando ticket con el servidor...</p>
                 </div>
             `;
         }
 
         function showSuccessResult(data) {
             const resultDiv = document.getElementById('scan-result');
+            const usedAtDate = data.usedAt ? new Date(data.usedAt).toLocaleString('es-PY') : new Date().toLocaleString('es-PY');
+            
             resultDiv.innerHTML = `
                 <div class="card result-card">
                     <div class="card-body">
@@ -322,25 +423,29 @@
                         </div>
                         <div class="row">
                             <div class="col-sm-6 mb-2">
-                                <strong>Cliente:</strong><br>
-                                <span class="text-muted">${data.clientName}</span>
+                                <strong><i class="fas fa-user me-1"></i> Cliente:</strong><br>
+                                <span class="text-muted">${data.clientName || 'N/A'}</span>
                             </div>
                             <div class="col-sm-6 mb-2">
-                                <strong>Evento:</strong><br>
-                                <span class="text-muted">${data.eventName}</span>
+                                <strong><i class="fas fa-calendar me-1"></i> Evento:</strong><br>
+                                <span class="text-muted">${data.eventName || 'N/A'}</span>
                             </div>
-                            <div class="col-sm-6 mb-2">
-                                <strong>Código:</strong><br>
-                                <code class="small">${data.ticketCode}</code>
+                            <div class="col-12 mb-2">
+                                <strong><i class="fas fa-ticket-alt me-1"></i> Código:</strong><br>
+                                <code class="small">${data.ticketCode || 'N/A'}</code>
                             </div>
-                            <div class="col-sm-6 mb-2">
-                                <strong>Validado:</strong><br>
-                                <span class="text-muted">${new Date(data.usedAt).toLocaleString()}</span>
+                            <div class="col-12 mb-2">
+                                <strong><i class="fas fa-clock me-1"></i> Validado:</strong><br>
+                                <span class="text-muted">${usedAtDate}</span>
                             </div>
+                        </div>
+                        <div class="alert alert-success mt-3" role="alert">
+                            <i class="fas fa-info-circle me-2"></i>
+                            ${data.message || 'Acceso autorizado'}
                         </div>
                         <div class="text-center mt-3">
                             <button onclick="resetScanner(true)" class="btn btn-primary">
-                                <i class="fas fa-qrcode me-2"></i>Escanear Otro
+                                <i class="fas fa-qrcode me-2"></i>Escanear Otro Ticket
                             </button>
                         </div>
                     </div>
@@ -354,18 +459,26 @@
             let cardClass = 'error-card';
             let iconClass = 'fas fa-times-circle text-danger';
             let titleClass = 'text-danger';
-            let title = '¡Ticket Inválido!';
+            let title = 'Ticket Inválido';
 
-            if (data.message.includes('ya ha sido utilizado') || data.message.includes('ya utilizado')) {
+            const message = data.message || 'Error desconocido';
+
+            if (message.toLowerCase().includes('ya') && (message.toLowerCase().includes('utilizado') || message.toLowerCase().includes('usado'))) {
                 cardClass = 'warning-card';
                 iconClass = 'fas fa-exclamation-triangle text-warning';
                 titleClass = 'text-warning';
                 title = 'Ticket Ya Usado';
-            } else if (data.message.includes('expirado')) {
+            } else if (message.toLowerCase().includes('expirado')) {
                 cardClass = 'warning-card';
                 iconClass = 'fas fa-clock text-warning';
                 titleClass = 'text-warning';
                 title = 'Ticket Expirado';
+            } else if (message.toLowerCase().includes('no encontrado')) {
+                iconClass = 'fas fa-question-circle text-danger';
+                title = 'Ticket No Encontrado';
+            } else if (message.toLowerCase().includes('permisos')) {
+                iconClass = 'fas fa-ban text-danger';
+                title = 'Sin Permisos';
             }
 
             resultDiv.innerHTML = `
@@ -376,12 +489,18 @@
                             <h4 class="${titleClass} mt-2">${title}</h4>
                         </div>
                         <div class="alert alert-light text-center">
-                            <strong>Motivo:</strong><br>
-                            ${data.message}
+                            <strong><i class="fas fa-exclamation-circle me-2"></i>Motivo:</strong><br>
+                            ${message}
                         </div>
+                        ${data.usedAt ? `
+                            <div class="text-muted small text-center">
+                                <i class="fas fa-clock me-1"></i>
+                                Usado el: ${new Date(data.usedAt).toLocaleString('es-PY')}
+                            </div>
+                        ` : ''}
                         <div class="text-center mt-3">
                             <button onclick="resetScanner(true)" class="btn btn-primary">
-                                <i class="fas fa-qrcode me-2"></i>Escanear Otro
+                                <i class="fas fa-qrcode me-2"></i>Escanear Otro Ticket
                             </button>
                         </div>
                     </div>
@@ -402,7 +521,7 @@
                         <i class="fas fa-exclamation-triangle text-danger fa-3x mb-3"></i>
                         <h5 class="text-danger">Error</h5>
                         <p>${message}</p>
-                        <button onclick="resetScanner(true)" class="btn btn-primary">
+                        <button onclick="resetScanner(false)" class="btn btn-primary">
                             <i class="fas fa-redo me-2"></i>Intentar de Nuevo
                         </button>
                     </div>
@@ -419,12 +538,27 @@
             document.getElementById('manual-code').value = '';
 
             if (reactivateScanner) {
-                document.getElementById('start-scanner').click();
+                setTimeout(() => {
+                    document.getElementById('start-scanner').click();
+                }, 500);
             }
         }
 
+        function updateStats(type) {
+            if (type === 'success') {
+                statsCounters.success++;
+            } else {
+                statsCounters.error++;
+            }
+            statsCounters.total++;
+
+            document.getElementById('success-count').textContent = statsCounters.success;
+            document.getElementById('error-count').textContent = statsCounters.error;
+            document.getElementById('total-count').textContent = statsCounters.total;
+        }
+
         function addToHistory(data, type) {
-            const timestamp = new Date().toLocaleString();
+            const timestamp = new Date().toLocaleString('es-PY');
             const historyItem = {
                 timestamp: timestamp,
                 type: type,
@@ -433,8 +567,8 @@
 
             validationHistory.unshift(historyItem);
 
-            if (validationHistory.length > 10) {
-                validationHistory = validationHistory.slice(0, 10);
+            if (validationHistory.length > 20) {
+                validationHistory = validationHistory.slice(0, 20);
             }
 
             updateHistoryDisplay();
@@ -449,22 +583,34 @@
             }
 
             let historyHtml = '';
-            validationHistory.forEach(item => {
-                const iconClass = item.type === 'success' ? 'fas fa-check-circle text-success' : 'fas fa-times-circle text-danger';
-                const clientName = item.data.clientName || 'N/A';
+            validationHistory.forEach((item, index) => {
+                const iconClass = item.type === 'success' 
+                    ? 'fas fa-check-circle text-success' 
+                    : 'fas fa-times-circle text-danger';
+                const clientName = item.data.clientName || item.data.ticketCode || 'Intento fallido';
+                const eventName = item.data.eventName ? `<br><small class="text-muted">${item.data.eventName}</small>` : '';
 
                 historyHtml += `
-                    <div class="d-flex align-items-center mb-2 pb-2 border-bottom">
-                        <i class="${iconClass} me-2"></i>
+                    <div class="history-item d-flex align-items-center mb-2 pb-2 ${index < validationHistory.length - 1 ? 'border-bottom' : ''} p-2 rounded">
+                        <i class="${iconClass} me-2 fa-lg"></i>
                         <div class="flex-grow-1">
-                            <small class="fw-bold">${clientName}</small><br>
-                            <small class="text-muted">${item.timestamp}</small>
+                            <small class="fw-bold">${clientName}</small>
+                            ${eventName}
+                            <br>
+                            <small class="text-muted"><i class="fas fa-clock me-1"></i>${item.timestamp}</small>
                         </div>
                     </div>
                 `;
             });
 
             historyDiv.innerHTML = historyHtml;
+        }
+
+        function clearHistory() {
+            if (confirm('¿Estás seguro de que deseas limpiar el historial?')) {
+                validationHistory = [];
+                updateHistoryDisplay();
+            }
         }
 
         function playSuccessSound() {
@@ -502,15 +648,11 @@
                 console.log('Audio no disponible');
             }
         }
-        
-        const originalResetScanner = resetScanner;
-        resetScanner = function(reactivateScanner = false) {
-            originalResetScanner(reactivateScanner);
-        }
 
+        // Limpieza al cerrar la página
         window.addEventListener('beforeunload', function () {
-            if (window.html5QrCode && window.html5QrCode.isScanning) {
-                window.html5QrCode.stop();
+            if (html5QrCode && html5QrCode.isScanning) {
+                html5QrCode.stop();
             }
         });
     </script>
